@@ -3,6 +3,8 @@ import { useData } from '../context/DataContext';
 import { AcademicYear, StudentGroup, NVQLevel, AcademicYearStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { BulkActionBar } from '../components/common/BulkActionBar';
+import { BulkImportModal } from '../components/common/BulkImportModal';
 import { formatDate } from '../utils/dateUtils';
 import {
   CalendarDays,
@@ -15,7 +17,8 @@ import {
   Filter,
   CheckCircle,
   Clock,
-  Archive
+  Archive,
+  Upload
 } from 'lucide-react';
 
 export const AcademicYearsPage: React.FC = () => {
@@ -51,6 +54,10 @@ export const AcademicYearsPage: React.FC = () => {
   // Group Modal State
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<StudentGroup | null>(null);
+  const [selectedYearIds, setSelectedYearIds] = useState<string[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
   const [groupForm, setGroupForm] = useState({
     name: '',
     code: '',
@@ -230,6 +237,96 @@ export const AcademicYearsPage: React.FC = () => {
     }
   };
 
+
+  const handleBulkDeleteYears = () => {
+    if (selectedYearIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedYearIds.length} selected academic years?`)) {
+      selectedYearIds.forEach((id) => deleteAcademicYear(id));
+      setSelectedYearIds([]);
+    }
+  };
+
+  const handleBulkDeleteGroups = () => {
+    if (selectedGroupIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedGroupIds.length} selected batches/groups?`)) {
+      selectedGroupIds.forEach((id) => deleteGroup(id));
+      setSelectedGroupIds([]);
+    }
+  };
+
+  const toggleSelectYear = (id: string) => {
+    setSelectedYearIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectGroup = (id: string) => {
+    setSelectedGroupIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const batchImportColumns = [
+    { key: 'code', label: 'Batch / Code', required: true },
+    { key: 'name', label: 'Batch Title / Name', required: true },
+    { key: 'nvqLevel', label: 'NVQ Level', required: true },
+    { key: 'currentSemester', label: 'Semester' },
+    { key: 'maxCapacity', label: 'Max Capacity' },
+    { key: 'academicYearCode', label: 'Academic Year (e.g. 2025/2026)' }
+  ];
+
+  const batchSampleData = [
+    {
+      code: 'L5-2025-A',
+      name: 'NVQ 5 - Batch 2025/2026 (Group A)',
+      nvqLevel: 'Level 5',
+      currentSemester: '1',
+      maxCapacity: '40',
+      academicYearCode: '2025/2026'
+    },
+    {
+      code: 'L6-2025-A',
+      name: 'NVQ 6 - Batch 2025/2027 (Group A)',
+      nvqLevel: 'Level 6',
+      currentSemester: '1',
+      maxCapacity: '35',
+      academicYearCode: '2025/2027'
+    }
+  ];
+
+  const handleBulkImportBatches = async (rows: any[]) => {
+    for (const r of rows) {
+      const nvq: NVQLevel = r.nvqLevel === 'Level 6' ? 'Level 6' : 'Level 5';
+      const yearCode = (r.academicYearCode || r.code.split('-')[1] || '2025/2026').trim();
+      let parentAy = academicYears.find((ay) => ay.code === yearCode);
+      if (!parentAy) {
+        const startYr = parseInt(yearCode.split('/')[0], 10) || new Date().getFullYear();
+        const durationYears = nvq === 'Level 6' ? 2 : 1;
+        const endYr = startYr + durationYears;
+        const newAy = {
+          code: yearCode,
+          name: `Academic Year ${yearCode} (${nvq})`,
+          nvqLevel: nvq,
+          startDate: `${startYr}-10-01`,
+          endDate: `${endYr}-09-30`,
+          status: 'upcoming' as const,
+          description: `Bulk imported cohort for ${nvq}`
+        };
+        addAcademicYear(newAy);
+        parentAy = academicYears.find((ay) => ay.code === yearCode) || { id: `ay-${Date.now()}` } as any;
+      }
+
+      addGroup({
+        name: r.name || `${nvq} Batch ${r.code}`,
+        code: r.code || `${nvq === 'Level 5' ? 'L5' : 'L6'}-2025-B`,
+        academicYearId: parentAy?.id || academicYears[0]?.id || '',
+        nvqLevel: nvq,
+        currentSemester: r.currentSemester ? parseInt(r.currentSemester, 10) || 1 : 1,
+        maxCapacity: r.maxCapacity ? parseInt(r.maxCapacity, 10) || 40 : 40
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -243,7 +340,14 @@ export const AcademicYearsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+          >
+            <Upload size={15} />
+            <span>Bulk Import</span>
+          </button>
           {activeTab === 'years' ? (
             <button
               onClick={() => handleOpenAddYear('Level 5')}
@@ -317,7 +421,17 @@ export const AcademicYearsPage: React.FC = () => {
 
       {/* Tab 1: Academic Years List */}
       {activeTab === 'years' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <>
+          <BulkActionBar
+            selectedCount={selectedYearIds.length}
+            totalCount={filteredYears.length}
+            onClearSelection={() => setSelectedYearIds([])}
+            onSelectAll={() => setSelectedYearIds(filteredYears.map((y) => y.id))}
+            onDeleteSelected={handleBulkDeleteYears}
+            entityName="academic years"
+            isAllSelected={selectedYearIds.length === filteredYears.length && filteredYears.length > 0}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredYears.map((ay) => {
             const batchGroups = groups.filter((g) => g.academicYearId === ay.id);
             const batchStudents = students.filter((s) => s.academicYearId === ay.id);
@@ -390,11 +504,22 @@ export const AcademicYearsPage: React.FC = () => {
             );
           })}
         </div>
+        </>
       )}
 
       {/* Tab 2: Groups & Batches List */}
       {activeTab === 'groups' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <>
+          <BulkActionBar
+            selectedCount={selectedGroupIds.length}
+            totalCount={filteredGroups.length}
+            onClearSelection={() => setSelectedGroupIds([])}
+            onSelectAll={() => setSelectedGroupIds(filteredGroups.map((g) => g.id))}
+            onDeleteSelected={handleBulkDeleteGroups}
+            entityName="batches/groups"
+            isAllSelected={selectedGroupIds.length === filteredGroups.length && filteredGroups.length > 0}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredGroups.map((grp) => {
             const parentYear = academicYears.find((ay) => ay.id === grp.academicYearId);
             const groupStudents = students.filter((s) => s.groupId === grp.id);
@@ -402,13 +527,23 @@ export const AcademicYearsPage: React.FC = () => {
             return (
               <div
                 key={grp.id}
-                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-emerald-200 transition-all flex flex-col justify-between"
+                className={`bg-white rounded-2xl p-5 border shadow-xs transition-all flex flex-col justify-between ${
+                  selectedGroupIds.includes(grp.id) ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200/80 hover:border-emerald-200'
+                }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
-                      {grp.code}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedGroupIds.includes(grp.id)}
+                        onChange={() => toggleSelectGroup(grp.id)}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                      />
+                      <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                        {grp.code}
+                      </span>
+                    </div>
                     <Badge variant={grp.nvqLevel === 'Level 5' ? 'green' : 'blue'}>{grp.nvqLevel}</Badge>
                   </div>
 
@@ -467,9 +602,8 @@ export const AcademicYearsPage: React.FC = () => {
             );
           })}
         </div>
+        </>
       )}
-
-      {/* Academic Year Modal */}
       <Modal
         isOpen={yearModalOpen}
         onClose={() => setYearModalOpen(false)}
@@ -709,6 +843,18 @@ export const AcademicYearsPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Batches & Academic Years"
+        subtitle="Import multiple academic cohorts and student groups from CSV or JSON format"
+        columns={batchImportColumns}
+        sampleData={batchSampleData}
+        onImport={handleBulkImportBatches}
+        entityName="Batches"
+      />
     </div>
   );
 };

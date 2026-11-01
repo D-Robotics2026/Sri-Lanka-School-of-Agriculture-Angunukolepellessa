@@ -3,6 +3,8 @@ import { useData } from '../context/DataContext';
 import { Lecturer } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { BulkActionBar } from '../components/common/BulkActionBar';
+import { BulkImportModal } from '../components/common/BulkImportModal';
 import {
   Users,
   Plus,
@@ -13,7 +15,8 @@ import {
   Edit2,
   Trash2,
   GraduationCap,
-  Building
+  Building,
+  Upload
 } from 'lucide-react';
 
 export const LecturersPage: React.FC = () => {
@@ -25,6 +28,8 @@ export const LecturersPage: React.FC = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLecturer, setEditingLecturer] = useState<Lecturer | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedLecturerIds, setSelectedLecturerIds] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     lecturerId: '',
@@ -94,6 +99,65 @@ export const LecturersPage: React.FC = () => {
     return matchesSearch && matchesDept;
   });
 
+
+  const handleBulkDeleteLecturers = () => {
+    if (selectedLecturerIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedLecturerIds.length} selected academic staff members?`)) {
+      selectedLecturerIds.forEach((id) => deleteLecturer(id));
+      setSelectedLecturerIds([]);
+    }
+  };
+
+  const toggleSelectLecturer = (id: string) => {
+    setSelectedLecturerIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const lecturerImportColumns = [
+    { key: 'fullName', label: 'Full Name', required: true },
+    { key: 'designation', label: 'Designation', required: true },
+    { key: 'department', label: 'Department', required: true },
+    { key: 'email', label: 'Email Address' },
+    { key: 'phone', label: 'Phone Number' },
+    { key: 'qualifications', label: 'Academic Qualifications' }
+  ];
+
+  const lecturerSampleData = [
+    {
+      fullName: 'Dr. W. M. Bandara',
+      designation: 'Senior Agricultural Research Lecturer',
+      department: 'Crop Science & Agronomy',
+      email: 'w.bandara@soa.doa.gov.lk',
+      phone: '+94 77 234 5678',
+      qualifications: 'Ph.D. (Agronomy) Peradeniya, B.Sc. (Agric)'
+    },
+    {
+      fullName: 'Eng. K. R. Jayawardena',
+      designation: 'Agricultural Engineering Lecturer',
+      department: 'Farm Machinery & Post-Harvest Technology',
+      email: 'k.jayawardena@soa.doa.gov.lk',
+      phone: '+94 71 345 6789',
+      qualifications: 'M.Sc. (Farm Power & Machinery), B.Sc. Eng'
+    }
+  ];
+
+  const handleBulkImportLecturers = async (rows: any[]) => {
+    for (const r of rows) {
+      addLecturer({
+        lecturerId: `LEC-AG-00${Math.floor(10 + Math.random() * 90)}`,
+        fullName: r.fullName || 'Faculty Member',
+        designation: r.designation || 'Agricultural Instructor',
+        department: r.department || 'Crop Science & Agronomy',
+        email: r.email || `${(r.fullName || 'staff').toLowerCase().replace(/[^a-z0-9]/g, '')}@soa.doa.gov.lk`,
+        phone: r.phone || '+94 77 000 0000',
+        qualifications: r.qualifications || 'B.Sc. (Agric) Sri Lanka',
+        photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80',
+        assignedModuleIds: []
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -145,6 +209,17 @@ export const LecturersPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedLecturerIds.length}
+        totalCount={filteredLecturers.length}
+        onClearSelection={() => setSelectedLecturerIds([])}
+        onSelectAll={() => setSelectedLecturerIds(filteredLecturers.map((l) => l.id))}
+        onDeleteSelected={handleBulkDeleteLecturers}
+        entityName="lecturers"
+        isAllSelected={selectedLecturerIds.length === filteredLecturers.length && filteredLecturers.length > 0}
+      />
+
       {/* Lecturer Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredLecturers.map((lec) => {
@@ -155,10 +230,20 @@ export const LecturersPage: React.FC = () => {
           return (
             <div
               key={lec.id}
-              className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-emerald-200 transition-all flex flex-col justify-between"
+              className={`bg-white rounded-2xl p-5 border shadow-xs transition-all flex flex-col justify-between ${
+                selectedLecturerIds.includes(lec.id) ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200/80 hover:border-emerald-200'
+              }`}
             >
               <div>
                 <div className="flex items-start gap-3.5 mb-3">
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedLecturerIds.includes(lec.id)}
+                      onChange={() => toggleSelectLecturer(lec.id)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                    />
+                  </div>
                   <img
                     src={lec.photoUrl}
                     alt={lec.fullName}
@@ -380,6 +465,18 @@ export const LecturersPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Academic Staff"
+        subtitle="Import multiple lecturer and faculty records from CSV or JSON format"
+        columns={lecturerImportColumns}
+        sampleData={lecturerSampleData}
+        onImport={handleBulkImportLecturers}
+        entityName="Lecturers"
+      />
     </div>
   );
 };

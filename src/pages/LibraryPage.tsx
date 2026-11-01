@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Book, BorrowRecord, BookReservation } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { BulkActionBar } from '../components/common/BulkActionBar';
+import { BulkImportModal } from '../components/common/BulkImportModal';
 import { StatCard } from '../components/common/StatCard';
 import { formatDate } from '../utils/dateUtils';
 import {
@@ -20,7 +22,8 @@ import {
   Bookmark,
   Edit2,
   Trash2,
-  Barcode
+  Barcode,
+  Upload
 } from 'lucide-react';
 
 export const LibraryPage: React.FC = () => {
@@ -50,6 +53,8 @@ export const LibraryPage: React.FC = () => {
   // Book Modal
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
   const [bookForm, setBookForm] = useState({
     isbn: '',
     title: '',
@@ -192,6 +197,76 @@ export const LibraryPage: React.FC = () => {
     return matchesSearch && matchesCat;
   });
 
+
+  const handleBulkDeleteBooks = () => {
+    if (selectedBookIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedBookIds.length} selected library books from inventory?`)) {
+      selectedBookIds.forEach((id) => deleteBook(id));
+      setSelectedBookIds([]);
+    }
+  };
+
+  const toggleSelectBook = (id: string) => {
+    setSelectedBookIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllBooks = () => {
+    if (selectedBookIds.length === filteredBooks.length && filteredBooks.length > 0) {
+      setSelectedBookIds([]);
+    } else {
+      setSelectedBookIds(filteredBooks.map((b) => b.id));
+    }
+  };
+
+  const bookImportColumns = [
+    { key: 'isbn', label: 'ISBN Code', required: true },
+    { key: 'title', label: 'Book Title', required: true },
+    { key: 'author', label: 'Author(s)', required: true },
+    { key: 'category', label: 'Category' },
+    { key: 'publicationYear', label: 'Year' },
+    { key: 'totalCopies', label: 'Total Copies' },
+    { key: 'shelfLocation', label: 'Shelf Location' }
+  ];
+
+  const bookSampleData = [
+    {
+      isbn: '978-955-1234-56-7',
+      title: 'Paddy Cultivation in Dry Zone Sri Lanka',
+      author: 'Dr. C. R. Panabokke',
+      category: 'Agronomy',
+      publicationYear: '2022',
+      totalCopies: '6',
+      shelfLocation: 'Shelf A-12'
+    },
+    {
+      isbn: '978-955-8765-43-2',
+      title: 'Soil Science and Fertility Management',
+      author: 'Prof. K. A. Nandasena',
+      category: 'Soil Science',
+      publicationYear: '2023',
+      totalCopies: '4',
+      shelfLocation: 'Shelf B-04'
+    }
+  ];
+
+  const handleBulkImportBooks = async (rows: any[]) => {
+    for (const r of rows) {
+      const copies = r.totalCopies ? parseInt(r.totalCopies, 10) || 5 : 5;
+      addBook({
+        isbn: r.isbn || `978-955-${Math.floor(1000 + Math.random() * 9000)}-01`,
+        title: r.title || 'Agriculture Reference Text',
+        author: r.author || 'Department of Agriculture',
+        category: r.category || 'Agronomy',
+        publicationYear: r.publicationYear ? parseInt(r.publicationYear, 10) || 2022 : 2022,
+        totalCopies: copies,
+        availableCopies: copies,
+        shelfLocation: r.shelfLocation || 'Shelf A-01'
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -324,11 +399,29 @@ export const LibraryPage: React.FC = () => {
 
       {/* Tab 1: Book Inventory Table */}
       {activeTab === 'inventory' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <>
+          <BulkActionBar
+            selectedCount={selectedBookIds.length}
+            totalCount={filteredBooks.length}
+            onClearSelection={() => setSelectedBookIds([])}
+            onSelectAll={toggleSelectAllBooks}
+            onDeleteSelected={handleBulkDeleteBooks}
+            entityName="books"
+            isAllSelected={selectedBookIds.length === filteredBooks.length && filteredBooks.length > 0}
+          />
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-600 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
+                  <th className="py-3 px-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedBookIds.length === filteredBooks.length && filteredBooks.length > 0}
+                      onChange={toggleSelectAllBooks}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3 px-4">Title & Details</th>
                   <th className="py-3 px-4">ISBN</th>
                   <th className="py-3 px-4">Category</th>
@@ -391,8 +484,20 @@ export const LibraryPage: React.FC = () => {
                         <button
                           onClick={() => handleOpenEditBook(b)}
                           className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg transition"
+                          title="Edit Book"
                         >
                           <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete book "${b.title}"?`)) {
+                              deleteBook(b.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                          title="Delete Book"
+                        >
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
@@ -402,6 +507,7 @@ export const LibraryPage: React.FC = () => {
             </table>
           </div>
         </div>
+        </>
       )}
 
       {/* Tab 2: Circulation & Fines Table */}
@@ -830,6 +936,18 @@ export const LibraryPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Library Books"
+        subtitle="Import books catalog, ISBNs, authors, and initial shelf copy inventory from CSV or JSON format"
+        columns={bookImportColumns}
+        sampleData={bookSampleData}
+        onImport={handleBulkImportBooks}
+        entityName="Books"
+      />
     </div>
   );
 };

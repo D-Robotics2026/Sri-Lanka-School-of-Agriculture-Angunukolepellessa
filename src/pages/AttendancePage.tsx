@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { AttendanceSession, AttendanceType, AttendanceRecordStatus, StudentAttendanceEntry } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { BulkActionBar } from '../components/common/BulkActionBar';
 import { formatDate } from '../utils/dateUtils';
 import {
   CheckSquare,
@@ -45,6 +46,7 @@ export const AttendancePage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewSessionModalOpen, setIsViewSessionModalOpen] = useState(false);
   const [viewingSession, setViewingSession] = useState<AttendanceSession | null>(null);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
 
   // Form State
   const [moduleId, setModuleId] = useState('');
@@ -137,6 +139,29 @@ export const AttendancePage: React.FC = () => {
       sess.date.includes(searchQuery);
     return matchesMod && matchesGrp && matchesSearch;
   });
+
+
+  const handleBulkDeleteSessions = () => {
+    if (selectedSessionIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedSessionIds.length} selected attendance sessions?`)) {
+      selectedSessionIds.forEach((id) => deleteAttendanceSession(id));
+      setSelectedSessionIds([]);
+    }
+  };
+
+  const toggleSelectSession = (id: string) => {
+    setSelectedSessionIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllSessions = () => {
+    if (selectedSessionIds.length === filteredSessions.length && filteredSessions.length > 0) {
+      setSelectedSessionIds([]);
+    } else {
+      setSelectedSessionIds(filteredSessions.map((s) => s.id));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -235,7 +260,15 @@ export const AttendancePage: React.FC = () => {
                   const pct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
 
                   return (
-                    <tr key={sess.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={sess.id} className={`hover:bg-slate-50/80 transition-colors ${selectedSessionIds.includes(sess.id) ? 'bg-emerald-50/30' : ''}`}>
+                      <td className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedSessionIds.includes(sess.id)}
+                          onChange={() => toggleSelectSession(sess.id)}
+                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                        />
+                      </td>
                       <td className="py-3 px-4">
                         <div className="font-bold text-slate-800 font-mono">{formatDate(sess.date)}</div>
                         <div className="text-[11px] font-mono text-slate-500">

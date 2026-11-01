@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Assignment, PracticalTest, AssignmentStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { BulkActionBar } from '../components/common/BulkActionBar';
 import { formatDate } from '../utils/dateUtils';
 import {
   FileSpreadsheet,
@@ -36,6 +37,8 @@ export const AssessmentsPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'assignments' | 'tests'>('assignments');
   const [selectedModuleFilter, setSelectedModuleFilter] = useState('all');
+  const [selectedAsnIds, setSelectedAsnIds] = useState<string[]>([]);
+  const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
 
   // Assignment Modal
   const [isAsnModalOpen, setIsAsnModalOpen] = useState(false);
@@ -160,6 +163,35 @@ export const AssessmentsPage: React.FC = () => {
   const filteredTests = practicalTests.filter((t) => {
     return selectedModuleFilter === 'all' || t.moduleId === selectedModuleFilter;
   });
+
+
+  const handleBulkDeleteAssignments = () => {
+    if (selectedAsnIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedAsnIds.length} selected student assignments?`)) {
+      selectedAsnIds.forEach((id) => deleteAssignment(id));
+      setSelectedAsnIds([]);
+    }
+  };
+
+  const handleBulkDeleteTests = () => {
+    if (selectedTestIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedTestIds.length} selected practical competency tests?`)) {
+      selectedTestIds.forEach((id) => deletePracticalTest(id));
+      setSelectedTestIds([]);
+    }
+  };
+
+  const toggleSelectAsn = (id: string) => {
+    setSelectedAsnIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectTest = (id: string) => {
+    setSelectedTestIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   return (
     <div className="space-y-6">

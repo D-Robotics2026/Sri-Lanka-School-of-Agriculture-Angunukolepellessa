@@ -18,13 +18,15 @@ import {
   StudentMealSubmission,
   SystemNotification,
   SystemSettings,
-  WeeklyMealChoices
+  WeeklyMealChoices,
+  SystemUser
 } from '../types';
 import {
   subscribeToCollection,
   saveFirestoreDoc,
   deleteFirestoreDoc
 } from '../firebase/syncService';
+import { createFirebaseAuthAccount } from '../firebase/authService';
 
 export const DEFAULT_FINE_SETTINGS: FineSettings = {
   dailyRateLkr: 10,
@@ -61,7 +63,7 @@ interface DataContextType {
 
   // Students
   students: Student[];
-  addStudent: (student: Omit<Student, 'id'>) => void;
+  addStudent: (student: Omit<Student, 'id'>, customPassword?: string) => void;
   updateStudent: (student: Student) => void;
   deleteStudent: (id: string) => void;
 
@@ -363,10 +365,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Students
-  const addStudent = (student: Omit<Student, 'id'>) => {
-    const newStudent: Student = { ...student, id: `stu-${Date.now()}` };
+  const addStudent = (student: Omit<Student, 'id'>, customPassword?: string) => {
+    const newStudent: Student = {
+      ...student,
+      id: `stu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+    };
     setStudents((prev) => [newStudent, ...prev]);
     saveFirestoreDoc('students', newStudent.id, newStudent);
+
+    // Synchronize to Firebase Authentication & Firestore users
+    const studentEmail =
+      student.email && student.email.includes('@')
+        ? student.email.trim().toLowerCase()
+        : `${(student.indexNumber || student.callingName || 'stu')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')}@student.soa.doa.gov.lk`;
+    const studentPassword = customPassword || student.nic || 'Student@123';
+    const studentUsername = (student.indexNumber || student.callingName || `stu_${Date.now()}`)
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]/g, '');
+
+    const studentUser: SystemUser = {
+      id: `user-${newStudent.id}`,
+      username: studentUsername,
+      passwordHash: studentPassword,
+      role: 'student',
+      fullName: student.fullName,
+      email: studentEmail,
+      phone: student.phone || '',
+      linkedStudentId: newStudent.id,
+      mustChangePassword: true,
+      createdAt: new Date().toISOString(),
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
+    };
+
+    saveFirestoreDoc('users', studentUser.id, studentUser);
+    createFirebaseAuthAccount(studentEmail, studentPassword);
   };
 
   const updateStudent = (student: Student) => {
@@ -377,6 +411,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteStudent = (id: string) => {
     setStudents((prev) => prev.filter((s) => s.id !== id));
     deleteFirestoreDoc('students', id);
+    deleteFirestoreDoc('users', `user-${id}`);
   };
 
   // Lecturers

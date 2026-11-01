@@ -4,6 +4,8 @@ import { Student, NVQLevel, EnrollmentStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { BarcodeDisplay } from '../components/common/BarcodeDisplay';
+import { BulkActionBar } from '../components/common/BulkActionBar';
+import { BulkImportModal } from '../components/common/BulkImportModal';
 import { formatDate } from '../utils/dateUtils';
 import {
   GraduationCap,
@@ -42,6 +44,8 @@ export const StudentsPage: React.FC = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
   // Form State
   const [form, setForm] = useState({
@@ -321,7 +325,7 @@ export const StudentsPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={7} className="py-8 text-center text-slate-400">
                     No students found matching your criteria.
                   </td>
                 </tr>

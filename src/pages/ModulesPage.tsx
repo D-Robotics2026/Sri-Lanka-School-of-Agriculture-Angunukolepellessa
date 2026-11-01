@@ -3,6 +3,8 @@ import { useData } from '../context/DataContext';
 import { Module, NVQLevel } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { BulkActionBar } from '../components/common/BulkActionBar';
+import { BulkImportModal } from '../components/common/BulkImportModal';
 import {
   BookOpenCheck,
   Plus,
@@ -14,7 +16,8 @@ import {
   Edit2,
   Trash2,
   UserCheck,
-  ClipboardList
+  ClipboardList,
+  Upload
 } from 'lucide-react';
 
 export const ModulesPage: React.FC = () => {
@@ -27,6 +30,8 @@ export const ModulesPage: React.FC = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<Module | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     code: '',
@@ -116,6 +121,73 @@ export const ModulesPage: React.FC = () => {
     return matchesSearch && matchesLevel && matchesSem;
   });
 
+
+  const handleBulkDeleteModules = () => {
+    if (selectedModuleIds.length === 0) return;
+    if (confirm(`Permanently delete ${selectedModuleIds.length} selected modules?`)) {
+      selectedModuleIds.forEach((id) => deleteModule(id));
+      setSelectedModuleIds([]);
+    }
+  };
+
+  const toggleSelectModule = (id: string) => {
+    setSelectedModuleIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const moduleImportColumns = [
+    { key: 'code', label: 'Module Code', required: true },
+    { key: 'title', label: 'Module Title', required: true },
+    { key: 'nvqLevel', label: 'NVQ Level', required: true },
+    { key: 'semester', label: 'Semester', required: true },
+    { key: 'credits', label: 'Credits' },
+    { key: 'theoryHours', label: 'Theory Hours' },
+    { key: 'practicalHours', label: 'Practical Hours' }
+  ];
+
+  const moduleSampleData = [
+    {
+      code: 'AG-501',
+      title: 'Principles of Agronomy & Crop Production',
+      nvqLevel: 'Level 5',
+      semester: '1',
+      credits: '3.0',
+      theoryHours: '30',
+      practicalHours: '60'
+    },
+    {
+      code: 'AG-602',
+      title: 'Advanced Protected Agriculture & Hydroponics',
+      nvqLevel: 'Level 6',
+      semester: '2',
+      credits: '4.0',
+      theoryHours: '40',
+      practicalHours: '75'
+    }
+  ];
+
+  const handleBulkImportModules = async (rows: any[]) => {
+    for (const r of rows) {
+      const nvq: NVQLevel = r.nvqLevel === 'Level 6' ? 'Level 6' : 'Level 5';
+      addModule({
+        code: r.code || `AG-50${Math.floor(10 + Math.random() * 90)}`,
+        title: r.title || 'Course Module',
+        nvqLevel: nvq,
+        semester: r.semester ? parseInt(r.semester, 10) || 1 : 1,
+        credits: r.credits ? parseFloat(r.credits) || 3.0 : 3.0,
+        theoryHours: r.theoryHours ? parseInt(r.theoryHours, 10) || 30 : 30,
+        practicalHours: r.practicalHours ? parseInt(r.practicalHours, 10) || 45 : 45,
+        primaryLecturerId: lecturers[0]?.id || '',
+        assessmentCriteria: {
+          assignmentsCount: 2,
+          practicalTestsCount: 2,
+          fieldVisitsCount: 1
+        }
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -129,13 +201,22 @@ export const ModulesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 self-start sm:self-auto"
-        >
-          <Plus size={16} />
-          <span>Add Academic Module</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+          >
+            <Upload size={15} />
+            <span>Bulk Import</span>
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+          >
+            <Plus size={16} />
+            <span>Add Academic Module</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters and Search Bar */}
@@ -175,6 +256,17 @@ export const ModulesPage: React.FC = () => {
           </select>
         </div>
       </div>
+
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedModuleIds.length}
+        totalCount={filteredModules.length}
+        onClearSelection={() => setSelectedModuleIds([])}
+        onSelectAll={() => setSelectedModuleIds(filteredModules.map((m) => m.id))}
+        onDeleteSelected={handleBulkDeleteModules}
+        entityName="modules"
+        isAllSelected={selectedModuleIds.length === filteredModules.length && filteredModules.length > 0}
+      />
 
       {/* Modules Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -437,6 +529,18 @@ export const ModulesPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Course Modules"
+        subtitle="Import curriculum modules, course credits, theory and practical hours from CSV or JSON format"
+        columns={moduleImportColumns}
+        sampleData={moduleSampleData}
+        onImport={handleBulkImportModules}
+        entityName="Modules"
+      />
     </div>
   );
 };
