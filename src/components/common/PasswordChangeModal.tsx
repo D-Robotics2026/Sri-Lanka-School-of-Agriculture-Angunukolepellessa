@@ -14,7 +14,7 @@ export const PasswordChangeModal: React.FC = () => {
 
   const isMandatory = currentUser.mustChangePassword;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -28,7 +28,7 @@ export const PasswordChangeModal: React.FC = () => {
       return;
     }
 
-    const result = changePassword(newPassword);
+    const result = await changePassword(newPassword);
     if (!result.success) {
       setError(result.error || 'Failed to update password');
       return;

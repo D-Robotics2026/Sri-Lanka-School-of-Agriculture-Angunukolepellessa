@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -52,15 +53,21 @@ export const Modal: React.FC<ModalProps> = ({
     '4xl': 'max-w-4xl'
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 md:p-6"
+      className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 overflow-hidden animate-fade-in"
       onClick={preventBackdropClose ? undefined : onClose}
     >
       <div
-        className={`relative w-full ${maxWidthStyles[maxWidth]} max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-150 my-auto`}
+        className={`relative w-full ${maxWidthStyles[maxWidth]} max-h-[92vh] sm:max-h-[88vh] flex flex-col bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all duration-200 animate-fade-up`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile drag handle / touch pill */}
+        <div className="sm:hidden pt-2.5 pb-1 flex justify-center bg-slate-50/80">
+          <div className="w-12 h-1 bg-slate-300 rounded-full" />
+        </div>
+
+        {/* Modal Header */}
         <div className="shrink-0 flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/80">
           <div className="min-w-0 pr-3">
             <h3 className="text-base sm:text-lg font-bold text-slate-800 truncate">{title}</h3>
@@ -76,10 +83,14 @@ export const Modal: React.FC<ModalProps> = ({
             </button>
           )}
         </div>
+
+        {/* Modal Scrollable Body */}
         <div ref={bodyRef} className="flex-1 p-4 sm:p-6 overflow-y-auto overscroll-contain">
           {children}
         </div>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 };

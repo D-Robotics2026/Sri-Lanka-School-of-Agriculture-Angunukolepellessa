@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SystemUser, UserRole } from '../types';
 import { subscribeToCollection, saveFirestoreDoc } from '../firebase/syncService';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  updatePassword
+} from 'firebase/auth';
+import { auth } from '../firebase/config';
 
 export const BOOTSTRAP_SUPERADMIN: SystemUser = {
   id: 'user-superadmin',
@@ -17,7 +24,11 @@ export const BOOTSTRAP_SUPERADMIN: SystemUser = {
 
 interface AuthContextType {
   currentUser: SystemUser | null;
-  login: (username: string, passwordHash: string) => { success: boolean; error?: string };
+  login: (
+    identifier: string,
+    passwordHash: string,
+    loginMode?: 'username' | 'phone'
+  ) => Promise<{ success: boolean; error?: string }>;
   register: (data: {
     fullName: string;
     username: string;
@@ -28,12 +39,12 @@ interface AuthContextType {
   }) => { success: boolean; error?: string };
   logout: () => void;
   switchUser: (userId: string) => void;
-  changePassword: (newPassword: string) => { success: boolean; error?: string };
+  changePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   mustChangePasswordOpen: boolean;
   setMustChangePasswordOpen: (open: boolean) => void;
   allUsers: SystemUser[];
   updateUser: (user: SystemUser) => void;
-  addUser: (user: Omit<SystemUser, 'id' | 'createdAt'>) => void;
+  addUser: (user: Omit<SystemUser, 'id' | 'createdAt'>) => Promise<void>;
 }
 
 const STORAGE_KEY_LOGGED_IN = 'loggedInUser';
@@ -98,17 +109,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser]);
 
-  const login = (username: string, passwordInput: string) => {
-    const found = users.find(
-      (u) => u.username.toLowerCase() === username.trim().toLowerCase()
-    );
+  const login = async (
+    identifier: string,
+    passwordInput: string,
+    loginMode: 'username' | 'phone' = 'username'
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanDigits = identifier.replace(/\D/g, '');
+
+    const found = users.find((u) => {
+      if (loginMode === 'phone') {
+        const uDigits = (u.phone || '').replace(/\D/g, '');
+        return uDigits.length >= 6 && (uDigits.endsWith(cleanDigits) || cleanDigits.endsWith(uDigits));
+      } else {
+        const uDigits = (u.phone || '').replace(/\D/g, '');
+        return (
+          u.username.toLowerCase() === cleanId ||
+          u.email.toLowerCase() === cleanId ||
+          (cleanDigits.length >= 6 && uDigits.length >= 6 && (uDigits.endsWith(cleanDigits) || cleanDigits.endsWith(uDigits)))
+        );
+      }
+    });
 
     if (!found) {
-      return { success: false, error: 'Invalid username or password.' };
+      return {
+        success: false,
+        error:
+          loginMode === 'phone'
+            ? 'No registered account found matching this phone number.'
+            : 'Invalid username, ID or email.'
+      };
     }
 
     if (found.passwordHash !== passwordInput) {
-      return { success: false, error: 'Invalid credentials provided.' };
+      return { success: false, error: 'Invalid password credentials provided.' };
+    }
+
+    // Sync authentication state with Firebase Authentication
+    try {
+      const authEmail = found.email || `${found.username}@soa.doa.gov.lk`;
+      await signInWithEmailAndPassword(auth, authEmail, passwordInput).catch(async (authErr) => {
+        // If account exists in Firestore database but not in Firebase Auth, auto-provision in Firebase Auth
+        if (
+          authErr.code === 'auth/user-not-found' ||
+          authErr.code === 'auth/invalid-credential' ||
+          authErr.code === 'auth/invalid-email'
+        ) {
+          try {
+            await createUserWithEmailAndPassword(auth, authEmail, passwordInput);
+          } catch {}
+        }
+      });
+    } catch (e) {
+      console.warn('Firebase Auth synchronization notice:', e);
     }
 
     const updatedUser = {
@@ -171,11 +224,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUsers((prev) => [newUser, ...prev]);
     saveFirestoreDoc('users', newUser.id, newUser);
+
+    // Sync to Firebase Auth
+    try {
+      createUserWithEmailAndPassword(auth, cleanEmail, data.password).catch(() => {});
+    } catch {}
+
     setCurrentUser(newUser);
     return { success: true };
   };
 
   const logout = () => {
+    try {
+      signOut(auth);
+    } catch {}
     setCurrentUser(null);
     localStorage.removeItem(STORAGE_KEY_LOGGED_IN);
   };
@@ -190,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const changePassword = (newPassword: string) => {
+  const changePassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'No user logged in.' };
     if (!newPassword || newPassword.length < 6) {
       return { success: false, error: 'Password must be at least 6 characters.' };
@@ -205,6 +267,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateUser(updated);
     setCurrentUser(updated);
     setMustChangePasswordOpen(false);
+
+    // Sync password update to Firebase Auth
+    try {
+      if (auth.currentUser) {
+        await updatePassword(auth.currentUser, newPassword);
+      }
+    } catch (e) {
+      console.warn('Firebase Auth update password notice:', e);
+    }
+
     return { success: true };
   };
 
@@ -218,7 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addUser = (newUser: Omit<SystemUser, 'id' | 'createdAt'>) => {
+  const addUser = async (newUser: Omit<SystemUser, 'id' | 'createdAt'>): Promise<void> => {
     const created: SystemUser = {
       ...newUser,
       id: `user-${Date.now()}`,
@@ -226,6 +298,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setUsers((prev) => [created, ...prev]);
     saveFirestoreDoc('users', created.id, created);
+
+    // Sync user to Firebase Authentication
+    try {
+      const email = created.email || `${created.username}@soa.doa.gov.lk`;
+      await createUserWithEmailAndPassword(auth, email, created.passwordHash);
+    } catch (e) {
+      console.warn('Firebase Auth user creation notice:', e);
+    }
   };
 
   return (
