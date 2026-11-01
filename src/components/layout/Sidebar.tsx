@@ -21,7 +21,8 @@ import {
   Sprout,
   LogOut,
   KeyRound,
-  X
+  X,
+  Database
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -36,6 +37,7 @@ interface SidebarProps {
 interface NavItem {
   id: string;
   label: string;
+  subLabel: string;
   icon: React.ElementType;
   roles?: string[];
 }
@@ -49,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setMobileOpen
 }) => {
   const { currentUser, logout, setMustChangePasswordOpen } = useAuth();
-  const { notifications, students } = useData();
+  const { notifications, students, firestoreStatus } = useData();
 
   if (!currentUser) return null;
 
@@ -67,82 +69,95 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return isTargeted && !n.readByUserIds.includes(currentUser.id);
   }).length;
 
-  // Simple, clean, concise words for all navigation items
+  // Rich, descriptive titles & sub-labels with more words as requested
   const navItems: NavItem[] = [
     {
       id: 'dashboard',
-      label: 'Dashboard',
+      label: 'Dashboard Overview',
+      subLabel: 'KPIs & Status Summary',
       icon: LayoutDashboard
     },
     {
       id: 'academics',
-      label: 'Batches',
+      label: 'Academic Batches',
+      subLabel: 'NVQ 5 & 6 Year Batches',
       icon: CalendarDays,
       roles: ['super_admin', 'admin', 'registrar']
     },
     {
       id: 'students',
-      label: 'Students',
+      label: 'Student Directory',
+      subLabel: 'Profiles & Barcode IDs',
       icon: GraduationCap,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'hostel_warden']
     },
     {
       id: 'lecturers',
-      label: 'Lecturers',
+      label: 'Academic Lecturers',
+      subLabel: 'Faculty & Department Staff',
       icon: Users,
       roles: ['super_admin', 'admin']
     },
     {
       id: 'modules',
-      label: 'Modules',
+      label: 'Modules & Syllabus',
+      subLabel: 'Theory & Practical Units',
       icon: BookOpenCheck,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'student']
     },
     {
       id: 'attendance',
-      label: 'Attendance',
+      label: 'Attendance Tracking',
+      subLabel: 'Class Hours & 80% Rule',
       icon: CheckSquare,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'student']
     },
     {
       id: 'assessments',
-      label: 'Assessments',
+      label: 'Assignments & Tests',
+      subLabel: 'Assessments & Grading',
       icon: FileSpreadsheet,
       roles: ['super_admin', 'admin', 'lecturer', 'student']
     },
     {
       id: 'ojt',
-      label: 'OJT',
+      label: '6-Month OJT Tracker',
+      subLabel: 'Industrial Placements',
       icon: Briefcase,
       roles: ['super_admin', 'admin', 'registrar', 'student']
     },
     {
       id: 'library',
-      label: 'Library',
+      label: 'Library & Book Desk',
+      subLabel: 'Inventory & Fine Returns',
       icon: Library,
       roles: ['super_admin', 'admin', 'librarian', 'student']
     },
     {
       id: 'hostel',
-      label: 'Hostel',
+      label: 'Hostel & 7×3 Meals',
+      subLabel: 'Weekly Catering Matrix',
       icon: UtensilsCrossed,
       roles: ['super_admin', 'admin', 'hostel_warden', 'student']
     },
     {
       id: 'reports',
-      label: 'Reports',
+      label: 'Progress Reports',
+      subLabel: 'Official Coverage Sheets',
       icon: BarChart3,
       roles: ['super_admin', 'admin', 'registrar']
     },
     {
       id: 'notifications',
-      label: 'Notices',
+      label: 'Notices & Broadcasts',
+      subLabel: 'Announcements & Alerts',
       icon: Bell,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'librarian', 'hostel_warden', 'student']
     },
     {
       id: 'settings',
-      label: 'Settings',
+      label: 'System Settings',
+      subLabel: 'Firebase & Parameters',
       icon: Settings,
       roles: ['super_admin', 'admin']
     }
@@ -176,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               </div>
               <p className="text-[10px] text-emerald-400 font-semibold truncate uppercase tracking-wider">
-                DOA Sri Lanka
+                Department of Agriculture
               </p>
             </div>
           </div>
@@ -190,7 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition ml-1"
-          title={collapsed ? 'Expand' : 'Collapse'}
+          title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
@@ -205,8 +220,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+      {/* Navigation Links with Descriptive Words */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -216,22 +231,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleSelect(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 group relative ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 isActive
-                  ? 'bg-emerald-600 text-white shadow-sm font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/90'
               } ${collapsed ? 'justify-center' : ''}`}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? `${item.label} • ${item.subLabel}` : undefined}
             >
               <Icon
-                size={18}
+                size={19}
                 className={`shrink-0 transition-transform ${
                   isActive
-                    ? 'text-white'
+                    ? 'text-white scale-105'
                     : 'text-slate-400 group-hover:text-emerald-400 group-hover:scale-110'
                 }`}
               />
-              {!collapsed && <span className="truncate">{item.label}</span>}
+
+              {!collapsed && (
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="text-xs font-bold leading-tight truncate">{item.label}</div>
+                  <div
+                    className={`text-[10px] leading-tight truncate mt-0.5 ${
+                      isActive ? 'text-emerald-100 font-medium' : 'text-slate-500 group-hover:text-slate-400'
+                    }`}
+                  >
+                    {item.subLabel}
+                  </div>
+                </div>
+              )}
 
               {/* Notice unread count badge */}
               {isNotices && unreadCount > 0 && !collapsed && (
@@ -244,8 +271,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* User Profile & Actions Footer */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-950">
+      {/* Cloud Sync Status & User Profile Footer */}
+      <div className="p-3 border-t border-slate-800/80 bg-slate-950 space-y-2.5">
+        {/* Real-time Firebase Sync Pill */}
+        {!collapsed && (
+          <div className="px-2.5 py-1.5 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between text-[10px]">
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <Database size={12} className="text-emerald-400" />
+              <span>Cloud Firestore</span>
+            </div>
+            <span
+              className={`px-1.5 py-0.5 rounded-md font-mono text-[9px] font-bold ${
+                firestoreStatus === 'connected'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+              }`}
+            >
+              {firestoreStatus === 'connected' ? 'ONLINE SYNC' : 'ACTIVE'}
+            </span>
+          </div>
+        )}
+
         {!collapsed ? (
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">
@@ -315,7 +361,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Desktop Sidebar */}
       <aside
         className={`hidden md:block shrink-0 transition-all duration-300 no-print z-20 ${
-          collapsed ? 'w-20' : 'w-64'
+          collapsed ? 'w-20' : 'w-72'
         }`}
       >
         <div className="sticky top-0 h-screen border-r border-slate-800/80">
@@ -330,7 +376,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-50 shadow-2xl animate-slide-left">
+          <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-slate-950 z-50 shadow-2xl animate-slide-left">
             {sidebarContent}
           </div>
         </div>

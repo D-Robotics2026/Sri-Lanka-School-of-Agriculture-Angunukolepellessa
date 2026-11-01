@@ -1,6 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SystemUser, UserRole } from '../types';
-import { SEED_SYSTEM_USERS } from '../data/seedData';
+import { subscribeToCollection, saveFirestoreDoc } from '../firebase/syncService';
+
+export const BOOTSTRAP_SUPERADMIN: SystemUser = {
+  id: 'user-superadmin',
+  username: 'superadmin',
+  passwordHash: 'admin123',
+  role: 'super_admin',
+  fullName: 'Director / Super Administrator',
+  email: 'admin.soa@doa.gov.lk',
+  phone: '+94 47 222 8234',
+  mustChangePassword: false,
+  createdAt: '2024-01-01T08:00:00Z',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
+};
 
 interface AuthContextType {
   currentUser: SystemUser | null;
@@ -38,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error('Failed to parse system users from localStorage', e);
     }
-    return SEED_SYSTEM_USERS;
+    return [BOOTSTRAP_SUPERADMIN];
   });
 
   const [currentUser, setCurrentUser] = useState<SystemUser | null>(() => {
@@ -50,11 +63,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error('Failed to parse loggedInUser from localStorage', e);
     }
-    // Default bootstrap user: superadmin
-    return SEED_SYSTEM_USERS[0];
+    return BOOTSTRAP_SUPERADMIN;
   });
 
   const [mustChangePasswordOpen, setMustChangePasswordOpen] = useState(false);
+
+  // Real-time synchronization with Firestore collection "users"
+  useEffect(() => {
+    const unsub = subscribeToCollection<SystemUser>('users', (cloudUsers) => {
+      if (cloudUsers.length > 0) {
+        setUsers(cloudUsers);
+      } else {
+        // If Firestore users collection is currently empty, save bootstrap superadmin to cloud
+        saveFirestoreDoc('users', BOOTSTRAP_SUPERADMIN.id, BOOTSTRAP_SUPERADMIN);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Sync users to localStorage
   useEffect(() => {
@@ -145,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setUsers((prev) => [newUser, ...prev]);
+    saveFirestoreDoc('users', newUser.id, newUser);
     setCurrentUser(newUser);
     return { success: true };
   };
@@ -186,6 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsers((prev) =>
       prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
     );
+    saveFirestoreDoc('users', updatedUser.id, updatedUser);
     if (currentUser && currentUser.id === updatedUser.id) {
       setCurrentUser(updatedUser);
     }
@@ -198,6 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString()
     };
     setUsers((prev) => [created, ...prev]);
+    saveFirestoreDoc('users', created.id, created);
   };
 
   return (

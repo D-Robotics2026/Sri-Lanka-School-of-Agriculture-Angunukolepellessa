@@ -21,8 +21,6 @@ export const Layout: React.FC<LayoutProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isDedicatedMobileRole = currentUser?.role === 'student' || currentUser?.role === 'hostel_warden';
-
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
       {/* Sleek Mobile Header (Only visible on small viewports) */}
@@ -70,19 +68,20 @@ export const Layout: React.FC<LayoutProps> = ({
         setMobileOpen={setMobileOpen}
       />
 
-      {/* Main Content Area */}
+      {/* Main Content Area with Page Switch Animation */}
       <main
-        className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-all ${
-          isDedicatedMobileRole ? 'pb-20 md:pb-8' : 'pb-8'
-        } pt-16 md:pt-6 animate-fade-in`}
+        className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-all pb-24 md:pb-8 pt-16 md:pt-6"
       >
-        <div className="max-w-7xl mx-auto">{children}</div>
+        <div key={currentTab} className="max-w-7xl mx-auto animate-fade-up">
+          {children}
+        </div>
       </main>
 
-      {/* Mobile Bottom Navigation for Student and Hostel Warden */}
+      {/* Mobile Bottom Navigation for all users */}
       <MobileBottomNav
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
+        onOpenMenu={() => setMobileOpen(true)}
       />
 
       {/* Mandatory Password Change Enforcement Modal */}

@@ -9,6 +9,7 @@ import {
   Assignment,
   PracticalTest,
   OJTPlacement,
+  OJTMonthlyReport,
   Book,
   BorrowRecord,
   BookReservation,
@@ -20,26 +21,32 @@ import {
   WeeklyMealChoices
 } from '../types';
 import {
-  SEED_ACADEMIC_YEARS,
-  SEED_GROUPS,
-  SEED_STUDENTS,
-  SEED_LECTURERS,
-  SEED_MODULES,
-  SEED_ATTENDANCE_SESSIONS,
-  SEED_ASSIGNMENTS,
-  SEED_PRACTICAL_TESTS,
-  SEED_OJT_PLACEMENTS,
-  SEED_BOOKS,
-  SEED_BORROW_RECORDS,
-  SEED_BOOK_RESERVATIONS,
-  SEED_FINE_SETTINGS,
-  SEED_MEAL_WEEKS,
-  SEED_MEAL_SUBMISSIONS,
-  SEED_NOTIFICATIONS,
-  SEED_SYSTEM_SETTINGS
-} from '../data/seedData';
+  subscribeToCollection,
+  saveFirestoreDoc,
+  deleteFirestoreDoc
+} from '../firebase/syncService';
+
+export const DEFAULT_FINE_SETTINGS: FineSettings = {
+  dailyRateLkr: 10,
+  maxBorrowDays: 14,
+  maxBooksPerStudent: 3
+};
+
+export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
+  institutionName: 'School of Agriculture - Angunakolapelessa',
+  institutionSubheading: 'Department of Agriculture, Sri Lanka',
+  academicDefaults: {
+    activeAcademicYearId: '',
+    minimumAttendanceThresholdPercent: 80
+  },
+  library: DEFAULT_FINE_SETTINGS,
+  allowSelfRegistration: false
+};
 
 interface DataContextType {
+  // Cloud Sync Status
+  firestoreStatus: 'connected' | 'permission-denied' | 'connecting';
+
   // Academic Years
   academicYears: AcademicYear[];
   addAcademicYear: (ay: Omit<AcademicYear, 'id'>) => void;
@@ -148,24 +155,26 @@ interface DataContextType {
 
   mealSubmissions: StudentMealSubmission[];
   saveMealSubmission: (
-    mealWeekId: string,
+    weekId: string,
     studentId: string,
     studentIndex: string,
     choices: WeeklyMealChoices,
     specialDietaryRemarks?: string
   ) => { success: boolean; error?: string };
-  isMealWeekLocked: (mealWeek: MealWeek) => boolean;
+  isMealWeekLocked: (week: MealWeek) => boolean;
 
   // Notifications
   notifications: SystemNotification[];
-  addNotification: (notif: Omit<SystemNotification, 'id' | 'createdAt' | 'readByUserIds'>) => void;
+  addNotification: (notification: Omit<SystemNotification, 'id' | 'createdAt' | 'readByUserIds'>) => void;
   markNotificationAsRead: (notificationId: string, userId: string) => void;
   markAllNotificationsAsRead: (userId: string) => void;
 
-  // Settings & System
+  // Settings & Sync Actions
   settings: SystemSettings;
-  updateSettings: (newSettings: SystemSettings) => void;
+  updateSettings: (settings: SystemSettings) => void;
+  clearAllSampleData: () => void;
   resetToDefaultSeed: () => void;
+  syncAllDataToFirestore: () => Promise<void>;
   exportBackupJson: () => string;
   importBackupJson: (jsonData: string) => { success: boolean; error?: string };
 }
@@ -178,7 +187,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<Re
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
+      console.error(`Error reading ${key} from localStorage`, error);
       return initialValue;
     }
   });
@@ -187,7 +196,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<Re
     try {
       localStorage.setItem(key, JSON.stringify(storedValue));
     } catch (error) {
-      console.error(`Error saving localStorage key "${key}":`, error);
+      console.error(`Error writing ${key} to localStorage`, error);
     }
   }, [key, storedValue]);
 
@@ -195,57 +204,106 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<Re
 }
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [academicYears, setAcademicYears] = useLocalStorage<AcademicYear[]>('soa_academic_years', SEED_ACADEMIC_YEARS);
-  const [groups, setGroups] = useLocalStorage<StudentGroup[]>('soa_groups', SEED_GROUPS);
-  const [students, setStudents] = useLocalStorage<Student[]>('soa_students', SEED_STUDENTS);
-  const [lecturers, setLecturers] = useLocalStorage<Lecturer[]>('soa_lecturers', SEED_LECTURERS);
-  const [modules, setModules] = useLocalStorage<Module[]>('soa_modules', SEED_MODULES);
-  const [attendanceSessions, setAttendanceSessions] = useLocalStorage<AttendanceSession[]>('soa_attendance_sessions', SEED_ATTENDANCE_SESSIONS);
-  const [assignments, setAssignments] = useLocalStorage<Assignment[]>('soa_assignments', SEED_ASSIGNMENTS);
-  const [practicalTests, setPracticalTests] = useLocalStorage<PracticalTest[]>('soa_practical_tests', SEED_PRACTICAL_TESTS);
-  const [ojtPlacements, setOjtPlacements] = useLocalStorage<OJTPlacement[]>('soa_ojt_placements', SEED_OJT_PLACEMENTS);
-  const [books, setBooks] = useLocalStorage<Book[]>('soa_books', SEED_BOOKS);
-  const [borrowRecords, setBorrowRecords] = useLocalStorage<BorrowRecord[]>('soa_borrow_records', SEED_BORROW_RECORDS);
-  const [bookReservations, setBookReservations] = useLocalStorage<BookReservation[]>('soa_book_reservations', SEED_BOOK_RESERVATIONS);
-  const [fineSettings, setFineSettings] = useLocalStorage<FineSettings>('soa_fine_settings', SEED_FINE_SETTINGS);
-  const [mealWeeks, setMealWeeks] = useLocalStorage<MealWeek[]>('soa_meal_weeks', SEED_MEAL_WEEKS);
-  const [mealSubmissions, setMealSubmissions] = useLocalStorage<StudentMealSubmission[]>('soa_meal_submissions', SEED_MEAL_SUBMISSIONS);
-  const [notifications, setNotifications] = useLocalStorage<SystemNotification[]>('soa_notifications', SEED_NOTIFICATIONS);
-  const [settings, setSettings] = useLocalStorage<SystemSettings>('soa_settings', SEED_SYSTEM_SETTINGS);
+  const [firestoreStatus, setFirestoreStatus] = useState<'connected' | 'permission-denied' | 'connecting'>('connecting');
 
-  // Auto-sync academic years to ensure NVQ Level 6 (2-Year e.g. 2025/2027) is present in live state
+  // Core entities initialized cleanly with zero sample mock data
+  const [academicYears, setAcademicYears] = useLocalStorage<AcademicYear[]>('soa_academic_years', []);
+  const [groups, setGroups] = useLocalStorage<StudentGroup[]>('soa_groups', []);
+  const [students, setStudents] = useLocalStorage<Student[]>('soa_students', []);
+  const [lecturers, setLecturers] = useLocalStorage<Lecturer[]>('soa_lecturers', []);
+  const [modules, setModules] = useLocalStorage<Module[]>('soa_modules', []);
+  const [attendanceSessions, setAttendanceSessions] = useLocalStorage<AttendanceSession[]>('soa_attendance_sessions', []);
+  const [assignments, setAssignments] = useLocalStorage<Assignment[]>('soa_assignments', []);
+  const [practicalTests, setPracticalTests] = useLocalStorage<PracticalTest[]>('soa_practical_tests', []);
+  const [ojtPlacements, setOjtPlacements] = useLocalStorage<OJTPlacement[]>('soa_ojt_placements', []);
+  const [books, setBooks] = useLocalStorage<Book[]>('soa_books', []);
+  const [borrowRecords, setBorrowRecords] = useLocalStorage<BorrowRecord[]>('soa_borrow_records', []);
+  const [bookReservations, setBookReservations] = useLocalStorage<BookReservation[]>('soa_book_reservations', []);
+  const [fineSettings, setFineSettings] = useLocalStorage<FineSettings>('soa_fine_settings', DEFAULT_FINE_SETTINGS);
+  const [mealWeeks, setMealWeeks] = useLocalStorage<MealWeek[]>('soa_meal_weeks', []);
+  const [mealSubmissions, setMealSubmissions] = useLocalStorage<StudentMealSubmission[]>('soa_meal_submissions', []);
+  const [notifications, setNotifications] = useLocalStorage<SystemNotification[]>('soa_notifications', []);
+  const [settings, setSettings] = useLocalStorage<SystemSettings>('soa_settings', DEFAULT_SYSTEM_SETTINGS);
+
+  // Real-time synchronization listeners with Cloud Firestore
   useEffect(() => {
-    setAcademicYears((prev) => {
-      const has2025L6 = prev.some((ay) => ay.code === '2025/2027');
-      if (!has2025L6) {
-        const seedItem = SEED_ACADEMIC_YEARS.find((ay) => ay.code === '2025/2027');
-        if (seedItem) {
-          return [...prev, seedItem];
-        }
+    const handleFirestoreError = (err: Error) => {
+      if (err.message && err.message.includes('permission-denied')) {
+        setFirestoreStatus('permission-denied');
       }
-      return prev;
-    });
-  }, []);
+    };
 
-  // Auto-update fine amounts on active borrow records dynamically
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    setBorrowRecords((prev) =>
-      prev.map((rec) => {
-        if (rec.status !== 'returned') {
-          const fine = calculateCurrentFine(rec.dueDate);
-          const isOverdue = new Date(today) > new Date(rec.dueDate);
-          return {
-            ...rec,
-            status: isOverdue ? 'overdue' : 'borrowed',
-            fineAmount: fine,
-            fineStatus: fine > 0 ? (rec.fineStatus === 'waived' ? 'waived' : 'pending') : 'none'
-          };
-        }
-        return rec;
-      })
-    );
-  }, [fineSettings.dailyRateLkr]);
+    const handleFirestoreSuccess = () => {
+      setFirestoreStatus('connected');
+    };
+
+    const unsubs = [
+      subscribeToCollection<AcademicYear>('academicYears', (items) => {
+        handleFirestoreSuccess();
+        if (items.length > 0) setAcademicYears(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<StudentGroup>('studentGroups', (items) => {
+        if (items.length > 0) setGroups(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<Student>('students', (items) => {
+        if (items.length > 0) setStudents(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<Lecturer>('lecturers', (items) => {
+        if (items.length > 0) setLecturers(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<Module>('modules', (items) => {
+        if (items.length > 0) setModules(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<AttendanceSession>('attendanceSessions', (items) => {
+        if (items.length > 0) setAttendanceSessions(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<Assignment>('assignments', (items) => {
+        if (items.length > 0) setAssignments(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<PracticalTest>('practicalTests', (items) => {
+        if (items.length > 0) setPracticalTests(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<OJTPlacement>('ojtPlacements', (items) => {
+        if (items.length > 0) setOjtPlacements(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<Book>('books', (items) => {
+        if (items.length > 0) setBooks(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<BorrowRecord>('borrowRecords', (items) => {
+        if (items.length > 0) setBorrowRecords(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<BookReservation>('bookReservations', (items) => {
+        if (items.length > 0) setBookReservations(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<MealWeek>('mealWeeks', (items) => {
+        if (items.length > 0) setMealWeeks(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<StudentMealSubmission>('mealSubmissions', (items) => {
+        if (items.length > 0) setMealSubmissions(items);
+      }, handleFirestoreError),
+
+      subscribeToCollection<SystemNotification>('notifications', (items) => {
+        if (items.length > 0) setNotifications(items);
+      }, handleFirestoreError)
+    ];
+
+    return () => {
+      unsubs.forEach((unsub) => unsub());
+    };
+  }, []);
 
   // Strict computation of attendance hours from startTime and endTime
   const calculateComputedHours = (startTime: string, endTime: string): number => {
@@ -262,7 +320,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const calculateCurrentFine = (dueDate: string, returnDate?: string): number => {
     const endComparisonDate = returnDate ? new Date(returnDate) : new Date();
     const due = new Date(dueDate);
-    // Normalize to midnight for accurate day counts
     endComparisonDate.setHours(0, 0, 0, 0);
     due.setHours(0, 0, 0, 0);
 
@@ -275,112 +332,133 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addAcademicYear = (ay: Omit<AcademicYear, 'id'>) => {
     const newAy: AcademicYear = { ...ay, id: `ay-${Date.now()}` };
     setAcademicYears((prev) => [newAy, ...prev]);
+    saveFirestoreDoc('academicYears', newAy.id, newAy);
   };
 
   const updateAcademicYear = (ay: AcademicYear) => {
     setAcademicYears((prev) => prev.map((item) => (item.id === ay.id ? ay : item)));
+    saveFirestoreDoc('academicYears', ay.id, ay);
   };
 
   const deleteAcademicYear = (id: string) => {
     setAcademicYears((prev) => prev.filter((item) => item.id !== id));
+    deleteFirestoreDoc('academicYears', id);
   };
 
   // Groups
   const addGroup = (grp: Omit<StudentGroup, 'id'>) => {
     const newGrp: StudentGroup = { ...grp, id: `grp-${Date.now()}` };
     setGroups((prev) => [newGrp, ...prev]);
+    saveFirestoreDoc('studentGroups', newGrp.id, newGrp);
   };
 
   const updateGroup = (grp: StudentGroup) => {
     setGroups((prev) => prev.map((item) => (item.id === grp.id ? grp : item)));
+    saveFirestoreDoc('studentGroups', grp.id, grp);
   };
 
   const deleteGroup = (id: string) => {
     setGroups((prev) => prev.filter((item) => item.id !== id));
+    deleteFirestoreDoc('studentGroups', id);
   };
 
   // Students
   const addStudent = (student: Omit<Student, 'id'>) => {
     const newStudent: Student = { ...student, id: `stu-${Date.now()}` };
     setStudents((prev) => [newStudent, ...prev]);
+    saveFirestoreDoc('students', newStudent.id, newStudent);
   };
 
   const updateStudent = (student: Student) => {
-    setStudents((prev) => prev.map((item) => (item.id === student.id ? student : item)));
+    setStudents((prev) => prev.map((s) => (s.id === student.id ? student : s)));
+    saveFirestoreDoc('students', student.id, student);
   };
 
   const deleteStudent = (id: string) => {
-    setStudents((prev) => prev.filter((item) => item.id !== id));
+    setStudents((prev) => prev.filter((s) => s.id !== id));
+    deleteFirestoreDoc('students', id);
   };
 
   // Lecturers
   const addLecturer = (lecturer: Omit<Lecturer, 'id'>) => {
     const newLecturer: Lecturer = { ...lecturer, id: `lec-${Date.now()}` };
     setLecturers((prev) => [newLecturer, ...prev]);
+    saveFirestoreDoc('lecturers', newLecturer.id, newLecturer);
   };
 
   const updateLecturer = (lecturer: Lecturer) => {
-    setLecturers((prev) => prev.map((item) => (item.id === lecturer.id ? lecturer : item)));
+    setLecturers((prev) => prev.map((l) => (l.id === lecturer.id ? lecturer : l)));
+    saveFirestoreDoc('lecturers', lecturer.id, lecturer);
   };
 
   const deleteLecturer = (id: string) => {
-    setLecturers((prev) => prev.filter((item) => item.id !== id));
+    setLecturers((prev) => prev.filter((l) => l.id !== id));
+    deleteFirestoreDoc('lecturers', id);
   };
 
   // Modules
   const addModule = (module: Omit<Module, 'id'>) => {
-    const newMod: Module = { ...module, id: `mod-${Date.now()}` };
-    setModules((prev) => [newMod, ...prev]);
+    const newModule: Module = { ...module, id: `mod-${Date.now()}` };
+    setModules((prev) => [newModule, ...prev]);
+    saveFirestoreDoc('modules', newModule.id, newModule);
   };
 
   const updateModule = (module: Module) => {
-    setModules((prev) => prev.map((item) => (item.id === module.id ? module : item)));
+    setModules((prev) => prev.map((m) => (m.id === module.id ? module : m)));
+    saveFirestoreDoc('modules', module.id, module);
   };
 
   const deleteModule = (id: string) => {
-    setModules((prev) => prev.filter((item) => item.id !== id));
+    setModules((prev) => prev.filter((m) => m.id !== id));
+    deleteFirestoreDoc('modules', id);
   };
 
-  // Attendance Sessions
+  // Attendance
   const addAttendanceSession = (session: Omit<AttendanceSession, 'id' | 'computedHours' | 'createdAt'>): AttendanceSession => {
     const computedHours = calculateComputedHours(session.startTime, session.endTime);
     const newSession: AttendanceSession = {
       ...session,
-      id: `att-sess-${Date.now()}`,
+      id: `att-${Date.now()}`,
       computedHours,
       createdAt: new Date().toISOString()
     };
     setAttendanceSessions((prev) => [newSession, ...prev]);
+    saveFirestoreDoc('attendanceSessions', newSession.id, newSession);
     return newSession;
   };
 
   const updateAttendanceSession = (session: AttendanceSession) => {
     const computedHours = calculateComputedHours(session.startTime, session.endTime);
     const updated = { ...session, computedHours };
-    setAttendanceSessions((prev) => prev.map((item) => (item.id === session.id ? updated : item)));
+    setAttendanceSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    saveFirestoreDoc('attendanceSessions', updated.id, updated);
   };
 
   const deleteAttendanceSession = (id: string) => {
-    setAttendanceSessions((prev) => prev.filter((item) => item.id !== id));
+    setAttendanceSessions((prev) => prev.filter((s) => s.id !== id));
+    deleteFirestoreDoc('attendanceSessions', id);
   };
 
-  // Assignments
+  // Assessments
   const addAssignment = (asn: Omit<Assignment, 'id' | 'createdAt' | 'submissions'>) => {
     const newAsn: Assignment = {
       ...asn,
       id: `asn-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
       submissions: []
     };
     setAssignments((prev) => [newAsn, ...prev]);
+    saveFirestoreDoc('assignments', newAsn.id, newAsn);
   };
 
   const updateAssignment = (asn: Assignment) => {
     setAssignments((prev) => prev.map((item) => (item.id === asn.id ? asn : item)));
+    saveFirestoreDoc('assignments', asn.id, asn);
   };
 
   const deleteAssignment = (id: string) => {
     setAssignments((prev) => prev.filter((item) => item.id !== id));
+    deleteFirestoreDoc('assignments', id);
   };
 
   const gradeAssignmentSubmission = (
@@ -391,27 +469,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     remarks?: string,
     status: 'submitted' | 'late' = 'submitted'
   ) => {
-    setAssignments((prev) =>
-      prev.map((asn) => {
+    setAssignments((prev) => {
+      const updated = prev.map((asn) => {
         if (asn.id !== assignmentId) return asn;
-        const existingIdx = asn.submissions.findIndex((s) => s.studentId === studentId);
-        const submissionEntry = {
-          studentId,
-          studentIndex,
-          marks,
-          remarks,
-          status,
-          submissionDate: new Date().toISOString().split('T')[0]
-        };
-
-        const updatedSubmissions =
-          existingIdx >= 0
-            ? asn.submissions.map((s, idx) => (idx === existingIdx ? submissionEntry : s))
-            : [...asn.submissions, submissionEntry];
-
-        return { ...asn, submissions: updatedSubmissions };
-      })
-    );
+        const exists = asn.submissions.some((sub) => sub.studentId === studentId);
+        let newSubs;
+        if (exists) {
+          newSubs = asn.submissions.map((sub) =>
+            sub.studentId === studentId
+              ? {
+                  ...sub,
+                  marks,
+                  remarks: remarks || sub.remarks,
+                  status,
+                  submissionDate: sub.submissionDate || new Date().toISOString()
+                }
+              : sub
+          );
+        } else {
+          newSubs = [
+            ...asn.submissions,
+            {
+              studentId,
+              studentIndex,
+              submissionDate: new Date().toISOString(),
+              marks,
+              remarks,
+              status
+            }
+          ];
+        }
+        const updatedAsn = { ...asn, submissions: newSubs };
+        saveFirestoreDoc('assignments', updatedAsn.id, updatedAsn);
+        return updatedAsn;
+      });
+      return updated;
+    });
   };
 
   // Practical Tests
@@ -422,14 +515,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       results: []
     };
     setPracticalTests((prev) => [newTest, ...prev]);
+    saveFirestoreDoc('practicalTests', newTest.id, newTest);
   };
 
   const updatePracticalTest = (test: PracticalTest) => {
-    setPracticalTests((prev) => prev.map((item) => (item.id === test.id ? test : item)));
+    setPracticalTests((prev) => prev.map((t) => (t.id === test.id ? test : t)));
+    saveFirestoreDoc('practicalTests', test.id, test);
   };
 
   const deletePracticalTest = (id: string) => {
-    setPracticalTests((prev) => prev.filter((item) => item.id !== id));
+    setPracticalTests((prev) => prev.filter((t) => t.id !== id));
+    deleteFirestoreDoc('practicalTests', id);
   };
 
   const recordPracticalResult = (
@@ -440,33 +536,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     competencyAchieved: boolean,
     remarks?: string
   ) => {
-    setPracticalTests((prev) =>
-      prev.map((t) => {
-        if (t.id !== testId) return t;
-        const entry = {
-          studentId,
-          studentIndex,
-          marks,
-          maxMarks: t.maxMarks,
-          competencyAchieved,
-          remarks
-        };
-        const existingIdx = t.results.findIndex((r) => r.studentId === studentId);
-        const updatedResults =
-          existingIdx >= 0
-            ? t.results.map((r, idx) => (idx === existingIdx ? entry : r))
-            : [...t.results, entry];
-        return { ...t, results: updatedResults };
-      })
-    );
+    setPracticalTests((prev) => {
+      const updated = prev.map((test) => {
+        if (test.id !== testId) return test;
+        const exists = test.results.some((r) => r.studentId === studentId);
+        let newResults;
+        if (exists) {
+          newResults = test.results.map((r) =>
+            r.studentId === studentId
+              ? {
+                  ...r,
+                  marks,
+                  maxMarks: test.maxMarks,
+                  competencyAchieved,
+                  remarks: remarks || r.remarks
+                }
+              : r
+          );
+        } else {
+          newResults = [
+            ...test.results,
+            {
+              studentId,
+              studentIndex,
+              marks,
+              maxMarks: test.maxMarks,
+              competencyAchieved,
+              remarks
+            }
+          ];
+        }
+        const updatedTest = { ...test, results: newResults };
+        saveFirestoreDoc('practicalTests', updatedTest.id, updatedTest);
+        return updatedTest;
+      });
+      return updated;
+    });
   };
 
   // OJT
   const addOJTPlacement = (placement: Omit<OJTPlacement, 'id' | 'monthlyReports'>) => {
-    const defaultReports: OJTPlacement['monthlyReports'] = [1, 2, 3, 4, 5, 6].map((m) => ({
-      monthNumber: m as 1 | 2 | 3 | 4 | 5 | 6,
+    const defaultReports: OJTMonthlyReport[] = ([1, 2, 3, 4, 5, 6] as const).map((m) => ({
+      monthNumber: m,
       reportMonth: `Month ${m}`,
-      status: 'pending'
+      status: 'pending' as const
     }));
 
     const newPlacement: OJTPlacement = {
@@ -475,10 +588,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       monthlyReports: defaultReports
     };
     setOjtPlacements((prev) => [newPlacement, ...prev]);
+    saveFirestoreDoc('ojtPlacements', newPlacement.id, newPlacement);
   };
 
   const updateOJTPlacement = (placement: OJTPlacement) => {
     setOjtPlacements((prev) => prev.map((p) => (p.id === placement.id ? placement : p)));
+    saveFirestoreDoc('ojtPlacements', placement.id, placement);
   };
 
   const updateOJTMonthlyReport = (
@@ -486,38 +601,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     monthNumber: 1 | 2 | 3 | 4 | 5 | 6,
     updates: Partial<OJTPlacement['monthlyReports'][0]>
   ) => {
-    setOjtPlacements((prev) =>
-      prev.map((p) => {
+    setOjtPlacements((prev) => {
+      const updated = prev.map((p) => {
         if (p.id !== placementId) return p;
-        const updatedReports = p.monthlyReports.map((r) =>
+        const newReports = p.monthlyReports.map((r) =>
           r.monthNumber === monthNumber ? { ...r, ...updates } : r
         );
-        return { ...p, monthlyReports: updatedReports };
-      })
-    );
+        const updatedPlc = { ...p, monthlyReports: newReports };
+        saveFirestoreDoc('ojtPlacements', updatedPlc.id, updatedPlc);
+        return updatedPlc;
+      });
+      return updated;
+    });
   };
 
   const saveOJTFinalEvaluation = (
     placementId: string,
     evaluation: NonNullable<OJTPlacement['finalEvaluation']>
   ) => {
-    setOjtPlacements((prev) =>
-      prev.map((p) => (p.id === placementId ? { ...p, finalEvaluation: evaluation } : p))
-    );
+    setOjtPlacements((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id !== placementId) return p;
+        const updatedPlc = { ...p, finalEvaluation: evaluation };
+        saveFirestoreDoc('ojtPlacements', updatedPlc.id, updatedPlc);
+        return updatedPlc;
+      });
+      return updated;
+    });
   };
 
-  // Library Management
+  // Library
   const addBook = (book: Omit<Book, 'id'>) => {
-    const newBook: Book = { ...book, id: `book-${Date.now()}` };
+    const newBook: Book = { ...book, id: `bk-${Date.now()}` };
     setBooks((prev) => [newBook, ...prev]);
+    saveFirestoreDoc('books', newBook.id, newBook);
   };
 
   const updateBook = (book: Book) => {
     setBooks((prev) => prev.map((b) => (b.id === book.id ? book : b)));
+    saveFirestoreDoc('books', book.id, book);
   };
 
   const deleteBook = (id: string) => {
     setBooks((prev) => prev.filter((b) => b.id !== id));
+    deleteFirestoreDoc('books', id);
   };
 
   const issueBook = (
@@ -525,27 +652,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     studentId: string,
     studentIndex: string,
     dueDateDays: number = fineSettings.maxBorrowDays
-  ): { success: boolean; error?: string } => {
+  ) => {
     const targetBook = books.find((b) => b.id === bookId);
-    if (!targetBook) return { success: false, error: 'Book not found.' };
-    if (targetBook.availableCopies <= 0) {
-      return { success: false, error: 'No copies currently available for issue.' };
-    }
+    if (!targetBook) return { success: false, error: 'Book not found' };
+    if (targetBook.availableCopies <= 0) return { success: false, error: 'No copies currently available' };
 
-    // Check student active borrow limit
-    const activeStudentBorrows = borrowRecords.filter(
+    const activeBorrows = borrowRecords.filter(
       (r) => r.studentId === studentId && r.status !== 'returned'
-    ).length;
-
-    if (activeStudentBorrows >= fineSettings.maxBooksPerStudent) {
-      return {
-        success: false,
-        error: `Student has already borrowed maximum allowable books (${fineSettings.maxBooksPerStudent}).`
-      };
+    );
+    if (activeBorrows.length >= fineSettings.maxBooksPerStudent) {
+      return { success: false, error: `Student already reached maximum limit of ${fineSettings.maxBooksPerStudent} books` };
     }
 
-    const today = new Date();
-    const issueDate = today.toISOString().split('T')[0];
+    const issueDate = new Date().toISOString().split('T')[0];
     const due = new Date();
     due.setDate(due.getDate() + dueDateDays);
     const dueDate = due.toISOString().split('T')[0];
@@ -562,240 +681,285 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fineStatus: 'none'
     };
 
-    // Decrement available copies
-    setBooks((prev) =>
-      prev.map((b) =>
-        b.id === bookId ? { ...b, availableCopies: Math.max(0, b.availableCopies - 1) } : b
-      )
-    );
+    const updatedBook = {
+      ...targetBook,
+      availableCopies: targetBook.availableCopies - 1
+    };
 
+    setBooks((prev) => prev.map((b) => (b.id === bookId ? updatedBook : b)));
     setBorrowRecords((prev) => [newRecord, ...prev]);
+
+    saveFirestoreDoc('books', updatedBook.id, updatedBook);
+    saveFirestoreDoc('borrowRecords', newRecord.id, newRecord);
+
     return { success: true };
   };
 
-  const returnBook = (recordId: string): { success: boolean; fineAmount: number } => {
+  const returnBook = (recordId: string) => {
     const record = borrowRecords.find((r) => r.id === recordId);
     if (!record || record.status === 'returned') return { success: false, fineAmount: 0 };
 
     const returnDate = new Date().toISOString().split('T')[0];
-    const fineAmount = calculateCurrentFine(record.dueDate, returnDate);
+    const fine = calculateCurrentFine(record.dueDate, returnDate);
 
-    // Increment available copies
-    setBooks((prev) =>
-      prev.map((b) =>
-        b.id === record.bookId ? { ...b, availableCopies: Math.min(b.totalCopies, b.availableCopies + 1) } : b
-      )
-    );
+    const updatedRecord: BorrowRecord = {
+      ...record,
+      returnDate,
+      status: 'returned',
+      fineAmount: fine,
+      fineStatus: fine > 0 ? (record.fineStatus === 'paid' ? 'paid' : 'pending') : 'none'
+    };
 
-    // Update record
-    setBorrowRecords((prev) =>
-      prev.map((r) =>
-        r.id === recordId
-          ? {
-              ...r,
-              returnDate,
-              status: 'returned',
-              fineAmount,
-              fineStatus: fineAmount > 0 ? 'pending' : 'none'
-            }
-          : r
-      )
-    );
+    const book = books.find((b) => b.id === record.bookId);
+    if (book) {
+      const updatedBook = { ...book, availableCopies: Math.min(book.totalCopies, book.availableCopies + 1) };
+      setBooks((prev) => prev.map((b) => (b.id === book.id ? updatedBook : b)));
+      saveFirestoreDoc('books', updatedBook.id, updatedBook);
+    }
 
-    return { success: true, fineAmount };
+    setBorrowRecords((prev) => prev.map((r) => (r.id === recordId ? updatedRecord : r)));
+    saveFirestoreDoc('borrowRecords', updatedRecord.id, updatedRecord);
+
+    return { success: true, fineAmount: fine };
   };
 
   const payFine = (recordId: string) => {
-    setBorrowRecords((prev) =>
-      prev.map((r) => (r.id === recordId ? { ...r, fineStatus: 'paid' } : r))
-    );
+    setBorrowRecords((prev) => {
+      const updated = prev.map((r) => (r.id === recordId ? { ...r, fineStatus: 'paid' as const } : r));
+      const target = updated.find((r) => r.id === recordId);
+      if (target) saveFirestoreDoc('borrowRecords', target.id, target);
+      return updated;
+    });
   };
 
   const waiveFine = (recordId: string) => {
-    setBorrowRecords((prev) =>
-      prev.map((r) => (r.id === recordId ? { ...r, fineStatus: 'waived' } : r))
-    );
+    setBorrowRecords((prev) => {
+      const updated = prev.map((r) => (r.id === recordId ? { ...r, fineStatus: 'waived' as const, fineAmount: 0 } : r));
+      const target = updated.find((r) => r.id === recordId);
+      if (target) saveFirestoreDoc('borrowRecords', target.id, target);
+      return updated;
+    });
   };
 
   const reserveBook = (bookId: string, studentId: string, studentIndex: string) => {
-    const existing = bookReservations.find(
-      (r) => r.bookId === bookId && r.studentId === studentId && r.status === 'active'
-    );
-    if (existing) {
-      return { success: false, error: 'Student already has an active reservation for this book.' };
-    }
+    const book = books.find((b) => b.id === bookId);
+    if (!book) return { success: false, error: 'Book not found' };
 
-    const currentBookReservations = bookReservations.filter(
-      (r) => r.bookId === bookId && r.status === 'active'
-    ).length;
-
-    const newRes: BookReservation = {
+    const existingReservations = bookReservations.filter((r) => r.bookId === bookId && r.status === 'active');
+    const newReservation: BookReservation = {
       id: `res-${Date.now()}`,
       bookId,
       studentId,
       studentIndex,
       reservedDate: new Date().toISOString().split('T')[0],
-      queuePosition: currentBookReservations + 1,
-      status: 'active'
+      status: 'active',
+      queuePosition: existingReservations.length + 1
     };
 
-    setBookReservations((prev) => [...prev, newRes]);
+    setBookReservations((prev) => [...prev, newReservation]);
+    saveFirestoreDoc('bookReservations', newReservation.id, newReservation);
+
     return { success: true };
   };
 
   const cancelReservation = (reservationId: string) => {
-    setBookReservations((prev) =>
-      prev.map((r) => (r.id === reservationId ? { ...r, status: 'cancelled' } : r))
-    );
+    setBookReservations((prev) => {
+      const updated = prev.map((r) => (r.id === reservationId ? { ...r, status: 'cancelled' as const } : r));
+      const target = updated.find((r) => r.id === reservationId);
+      if (target) saveFirestoreDoc('bookReservations', target.id, target);
+      return updated;
+    });
   };
 
   const fulfillReservation = (reservationId: string) => {
-    setBookReservations((prev) =>
-      prev.map((r) => (r.id === reservationId ? { ...r, status: 'fulfilled' } : r))
-    );
+    setBookReservations((prev) => {
+      const updated = prev.map((r) => (r.id === reservationId ? { ...r, status: 'fulfilled' as const } : r));
+      const target = updated.find((r) => r.id === reservationId);
+      if (target) saveFirestoreDoc('bookReservations', target.id, target);
+      return updated;
+    });
   };
 
   const updateFineSettings = (newSettings: FineSettings) => {
     setFineSettings(newSettings);
+    saveFirestoreDoc('settings', 'fineSettings', newSettings);
   };
 
   // Hostel & Meals
+  const isMealWeekLocked = (week: MealWeek): boolean => {
+    if (week.status === 'closed') return true;
+    const now = new Date();
+    const deadline = new Date(week.submissionDeadline);
+    return now > deadline;
+  };
+
   const addMealWeek = (week: Omit<MealWeek, 'id'>) => {
     const newWeek: MealWeek = { ...week, id: `mw-${Date.now()}` };
     setMealWeeks((prev) => [newWeek, ...prev]);
+    saveFirestoreDoc('mealWeeks', newWeek.id, newWeek);
   };
 
   const updateMealWeek = (week: MealWeek) => {
     setMealWeeks((prev) => prev.map((w) => (w.id === week.id ? week : w)));
+    saveFirestoreDoc('mealWeeks', week.id, week);
   };
 
   const deleteMealWeek = (id: string) => {
     setMealWeeks((prev) => prev.filter((w) => w.id !== id));
-  };
-
-  const isMealWeekLocked = (mealWeek: MealWeek): boolean => {
-    if (mealWeek.status === 'closed') return true;
-    const now = new Date();
-    const deadline = new Date(mealWeek.submissionDeadline);
-    return now.getTime() > deadline.getTime();
+    deleteFirestoreDoc('mealWeeks', id);
   };
 
   const saveMealSubmission = (
-    mealWeekId: string,
+    weekId: string,
     studentId: string,
     studentIndex: string,
     choices: WeeklyMealChoices,
     specialDietaryRemarks?: string
-  ): { success: boolean; error?: string } => {
-    const week = mealWeeks.find((w) => w.id === mealWeekId);
-    if (!week) return { success: false, error: 'Meal week not found.' };
-
+  ) => {
+    const week = mealWeeks.find((w) => w.id === weekId);
+    if (!week) return { success: false, error: 'Meal week not found' };
     if (isMealWeekLocked(week)) {
-      return { success: false, error: 'Submission deadline has passed for this week. Choices are locked.' };
+      return { success: false, error: 'Submissions for this meal schedule are locked.' };
     }
 
-    const existingIdx = mealSubmissions.findIndex(
-      (s) => s.mealWeekId === mealWeekId && s.studentId === studentId
-    );
+    const existing = mealSubmissions.find((s) => s.mealWeekId === weekId && s.studentId === studentId);
+    let submissionToSave: StudentMealSubmission;
 
-    const submission: StudentMealSubmission = {
-      id: existingIdx >= 0 ? mealSubmissions[existingIdx].id : `sub-${Date.now()}`,
-      mealWeekId,
-      studentId,
-      studentIndex,
-      submittedAt: new Date().toISOString(),
-      choices,
-      specialDietaryRemarks
-    };
-
-    if (existingIdx >= 0) {
-      setMealSubmissions((prev) =>
-        prev.map((s, idx) => (idx === existingIdx ? submission : s))
-      );
+    if (existing) {
+      submissionToSave = {
+        ...existing,
+        choices,
+        specialDietaryRemarks:
+          specialDietaryRemarks !== undefined ? specialDietaryRemarks : existing.specialDietaryRemarks,
+        submittedAt: new Date().toISOString()
+      };
+      setMealSubmissions((prev) => prev.map((s) => (s.id === existing.id ? submissionToSave : s)));
     } else {
-      setMealSubmissions((prev) => [submission, ...prev]);
+      submissionToSave = {
+        id: `ms-${Date.now()}`,
+        mealWeekId: weekId,
+        studentId,
+        studentIndex,
+        submittedAt: new Date().toISOString(),
+        choices,
+        specialDietaryRemarks
+      };
+      setMealSubmissions((prev) => [submissionToSave, ...prev]);
     }
 
+    saveFirestoreDoc('mealSubmissions', submissionToSave.id, submissionToSave);
     return { success: true };
   };
 
   // Notifications
-  const addNotification = (notif: Omit<SystemNotification, 'id' | 'createdAt' | 'readByUserIds'>) => {
+  const addNotification = (notification: Omit<SystemNotification, 'id' | 'createdAt' | 'readByUserIds'>) => {
     const newNotif: SystemNotification = {
-      ...notif,
+      ...notification,
       id: `notif-${Date.now()}`,
       createdAt: new Date().toISOString(),
       readByUserIds: []
     };
     setNotifications((prev) => [newNotif, ...prev]);
+    saveFirestoreDoc('notifications', newNotif.id, newNotif);
   };
 
   const markNotificationAsRead = (notificationId: string, userId: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => {
+    setNotifications((prev) => {
+      const updated = prev.map((n) => {
         if (n.id === notificationId && !n.readByUserIds.includes(userId)) {
-          return { ...n, readByUserIds: [...n.readByUserIds, userId] };
+          const updatedNotif = { ...n, readByUserIds: [...n.readByUserIds, userId] };
+          saveFirestoreDoc('notifications', updatedNotif.id, updatedNotif);
+          return updatedNotif;
         }
         return n;
-      })
-    );
+      });
+      return updated;
+    });
   };
 
   const markAllNotificationsAsRead = (userId: string) => {
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.readByUserIds.includes(userId) ? n : { ...n, readByUserIds: [...n.readByUserIds, userId] }
-      )
-    );
+    setNotifications((prev) => {
+      const updated = prev.map((n) => {
+        if (!n.readByUserIds.includes(userId)) {
+          const updatedNotif = { ...n, readByUserIds: [...n.readByUserIds, userId] };
+          saveFirestoreDoc('notifications', updatedNotif.id, updatedNotif);
+          return updatedNotif;
+        }
+        return n;
+      });
+      return updated;
+    });
   };
 
-  // Settings
   const updateSettings = (newSettings: SystemSettings) => {
     setSettings(newSettings);
+    saveFirestoreDoc('settings', 'systemSettings', newSettings);
   };
 
-  const resetToDefaultSeed = () => {
-    setAcademicYears(SEED_ACADEMIC_YEARS);
-    setGroups(SEED_GROUPS);
-    setStudents(SEED_STUDENTS);
-    setLecturers(SEED_LECTURERS);
-    setModules(SEED_MODULES);
-    setAttendanceSessions(SEED_ATTENDANCE_SESSIONS);
-    setAssignments(SEED_ASSIGNMENTS);
-    setPracticalTests(SEED_PRACTICAL_TESTS);
-    setOjtPlacements(SEED_OJT_PLACEMENTS);
-    setBooks(SEED_BOOKS);
-    setBorrowRecords(SEED_BORROW_RECORDS);
-    setBookReservations(SEED_BOOK_RESERVATIONS);
-    setFineSettings(SEED_FINE_SETTINGS);
-    setMealWeeks(SEED_MEAL_WEEKS);
-    setMealSubmissions(SEED_MEAL_SUBMISSIONS);
-    setNotifications(SEED_NOTIFICATIONS);
-    setSettings(SEED_SYSTEM_SETTINGS);
+  // Clear all sample mock data cleanly
+  const clearAllSampleData = () => {
+    setAcademicYears([]);
+    setGroups([]);
+    setStudents([]);
+    setLecturers([]);
+    setModules([]);
+    setAttendanceSessions([]);
+    setAssignments([]);
+    setPracticalTests([]);
+    setOjtPlacements([]);
+    setBooks([]);
+    setBorrowRecords([]);
+    setBookReservations([]);
+    setMealWeeks([]);
+    setMealSubmissions([]);
+    setNotifications([]);
+    localStorage.clear();
+  };
+
+  // One-click mass sync local state to Cloud Firestore
+  const syncAllDataToFirestore = async () => {
+    for (const ay of academicYears) await saveFirestoreDoc('academicYears', ay.id, ay);
+    for (const g of groups) await saveFirestoreDoc('studentGroups', g.id, g);
+    for (const s of students) await saveFirestoreDoc('students', s.id, s);
+    for (const l of lecturers) await saveFirestoreDoc('lecturers', l.id, l);
+    for (const m of modules) await saveFirestoreDoc('modules', m.id, m);
+    for (const a of attendanceSessions) await saveFirestoreDoc('attendanceSessions', a.id, a);
+    for (const as of assignments) await saveFirestoreDoc('assignments', as.id, as);
+    for (const pt of practicalTests) await saveFirestoreDoc('practicalTests', pt.id, pt);
+    for (const o of ojtPlacements) await saveFirestoreDoc('ojtPlacements', o.id, o);
+    for (const b of books) await saveFirestoreDoc('books', b.id, b);
+    for (const br of borrowRecords) await saveFirestoreDoc('borrowRecords', br.id, br);
+    for (const res of bookReservations) await saveFirestoreDoc('bookReservations', res.id, res);
+    for (const mw of mealWeeks) await saveFirestoreDoc('mealWeeks', mw.id, mw);
+    for (const ms of mealSubmissions) await saveFirestoreDoc('mealSubmissions', ms.id, ms);
+    for (const n of notifications) await saveFirestoreDoc('notifications', n.id, n);
+    await saveFirestoreDoc('settings', 'systemSettings', settings);
   };
 
   const exportBackupJson = (): string => {
-    const fullBackup = {
-      academicYears,
-      groups,
-      students,
-      lecturers,
-      modules,
-      attendanceSessions,
-      assignments,
-      practicalTests,
-      ojtPlacements,
-      books,
-      borrowRecords,
-      bookReservations,
-      fineSettings,
-      mealWeeks,
-      mealSubmissions,
-      notifications,
-      settings,
-      exportedAt: new Date().toISOString()
-    };
-    return JSON.stringify(fullBackup, null, 2);
+    return JSON.stringify(
+      {
+        academicYears,
+        groups,
+        students,
+        lecturers,
+        modules,
+        attendanceSessions,
+        assignments,
+        practicalTests,
+        ojtPlacements,
+        books,
+        borrowRecords,
+        bookReservations,
+        fineSettings,
+        mealWeeks,
+        mealSubmissions,
+        notifications,
+        settings
+      },
+      null,
+      2
+    );
   };
 
   const importBackupJson = (jsonData: string): { success: boolean; error?: string } => {
@@ -827,6 +991,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <DataContext.Provider
       value={{
+        firestoreStatus,
         academicYears,
         addAcademicYear,
         updateAcademicYear,
@@ -912,7 +1077,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         settings,
         updateSettings,
-        resetToDefaultSeed,
+        clearAllSampleData,
+        resetToDefaultSeed: clearAllSampleData,
+        syncAllDataToFirestore,
         exportBackupJson,
         importBackupJson
       }}
