@@ -213,6 +213,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [notifications, setNotifications] = useLocalStorage<SystemNotification[]>('soa_notifications', SEED_NOTIFICATIONS);
   const [settings, setSettings] = useLocalStorage<SystemSettings>('soa_settings', SEED_SYSTEM_SETTINGS);
 
+  // Auto-sync academic years to ensure NVQ Level 6 (2-Year e.g. 2025/2027) is present in live state
+  useEffect(() => {
+    setAcademicYears((prev) => {
+      const has2025L6 = prev.some((ay) => ay.code === '2025/2027');
+      if (!has2025L6) {
+        const seedItem = SEED_ACADEMIC_YEARS.find((ay) => ay.code === '2025/2027');
+        if (seedItem) {
+          return [...prev, seedItem];
+        }
+      }
+      return prev;
+    });
+  }, []);
+
   // Auto-update fine amounts on active borrow records dynamically
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];

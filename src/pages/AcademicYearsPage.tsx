@@ -59,19 +59,72 @@ export const AcademicYearsPage: React.FC = () => {
     maxCapacity: 40
   });
 
+  // Helper to compute academic year code, end date and default name based on level
+  // NVQ Level 5 = 1 year duration (ex. 2025/2026)
+  // NVQ Level 6 = 2 years duration (ex. 2025/2027)
+  const computeCodeAndDates = (level: NVQLevel, startDateStr: string) => {
+    const startYear = startDateStr ? parseInt(startDateStr.split('-')[0], 10) : 2025;
+    const safeStartYear = isNaN(startYear) ? 2025 : startYear;
+    if (level === 'Level 5') {
+      const endYear = safeStartYear + 1; // 1-year duration
+      return {
+        code: `${safeStartYear}/${endYear}`,
+        endDate: `${endYear}-09-30`,
+        name: `Academic Year ${safeStartYear}/${endYear} (NVQ Level 5)`
+      };
+    } else {
+      const endYear = safeStartYear + 2; // 2-year duration
+      return {
+        code: `${safeStartYear}/${endYear}`,
+        endDate: `${endYear}-09-30`,
+        name: `Academic Year ${safeStartYear}/${endYear} (NVQ Level 6)`
+      };
+    }
+  };
+
   // Open Add Year
-  const handleOpenAddYear = () => {
+  const handleOpenAddYear = (initialLevel: NVQLevel = 'Level 5') => {
     setEditingYear(null);
+    const defaults = computeCodeAndDates(initialLevel, '2025-10-01');
     setYearForm({
-      code: '2025/2026',
-      name: 'Academic Year 2025/2026',
-      nvqLevel: 'Level 5',
+      code: defaults.code,
+      name: defaults.name,
+      nvqLevel: initialLevel,
       startDate: '2025-10-01',
-      endDate: '2026-09-30',
+      endDate: defaults.endDate,
       status: 'upcoming',
-      description: ''
+      description: initialLevel === 'Level 5'
+        ? '1-Year Curriculum: 2 Semesters Institutional + 6 Months OJT'
+        : '2-Year Curriculum: 4 Semesters Institutional + 6 Months OJT'
     });
     setYearModalOpen(true);
+  };
+
+  // Handle changing Level in modal (recomputes code and end date)
+  const handleLevelChange = (newLevel: NVQLevel) => {
+    const defaults = computeCodeAndDates(newLevel, yearForm.startDate);
+    setYearForm((prev) => ({
+      ...prev,
+      nvqLevel: newLevel,
+      code: defaults.code,
+      name: defaults.name,
+      endDate: defaults.endDate,
+      description: newLevel === 'Level 5'
+        ? '1-Year Curriculum: 2 Semesters Institutional + 6 Months OJT'
+        : '2-Year Curriculum: 4 Semesters Institutional + 6 Months OJT'
+    }));
+  };
+
+  // Handle changing Start Date in modal (recomputes code and end date)
+  const handleStartDateChange = (newStartDate: string) => {
+    const defaults = computeCodeAndDates(yearForm.nvqLevel, newStartDate);
+    setYearForm((prev) => ({
+      ...prev,
+      startDate: newStartDate,
+      code: defaults.code,
+      endDate: defaults.endDate,
+      name: defaults.name
+    }));
   };
 
   // Open Edit Year
@@ -178,14 +231,14 @@ export const AcademicYearsPage: React.FC = () => {
             Academic Years & Student Batches
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Curriculum adherence: NVQ Level 5 (2 Semesters + 6-Mo OJT) & NVQ Level 6 (4 Semesters + 6-Mo OJT)
+            Curriculum duration rules: <strong>NVQ Level 5 = 1 Year (ex. 2025/2026)</strong> and <strong>NVQ Level 6 = 2 Years (ex. 2025/2027)</strong>
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {activeTab === 'years' ? (
             <button
-              onClick={handleOpenAddYear}
+              onClick={() => handleOpenAddYear('Level 5')}
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
             >
               <Plus size={16} />
@@ -277,8 +330,8 @@ export const AcademicYearsPage: React.FC = () => {
                   <h3 className="text-base font-bold text-slate-800 leading-snug mt-2">{ay.name}</h3>
                   <div className="mt-1 flex items-center gap-2">
                     <Badge variant={ay.nvqLevel === 'Level 5' ? 'green' : 'blue'}>{ay.nvqLevel}</Badge>
-                    <span className="text-[11px] text-slate-400">
-                      {ay.nvqLevel === 'Level 5' ? '2 Semesters + 6M OJT' : '4 Semesters + 6M OJT'}
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {ay.nvqLevel === 'Level 5' ? '1 Year Duration (2 Sem + 6M OJT)' : '2 Years Duration (4 Sem + 6M OJT)'}
                     </span>
                   </div>
 
@@ -418,27 +471,59 @@ export const AcademicYearsPage: React.FC = () => {
         <form onSubmit={handleSaveYear} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">NVQ Level</label>
+              <select
+                value={yearForm.nvqLevel}
+                onChange={(e) => handleLevelChange(e.target.value as NVQLevel)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-bold text-slate-800"
+              >
+                <option value="Level 5">NVQ Level 5 (1 Year: ex. 2025/2026)</option>
+                <option value="Level 6">NVQ Level 6 (2 Years: ex. 2025/2027)</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Code / Batch Ref</label>
               <input
                 type="text"
                 required
                 value={yearForm.code}
                 onChange={(e) => setYearForm({ ...yearForm, code: e.target.value })}
-                placeholder="e.g. 2024/2025"
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500"
+                placeholder={yearForm.nvqLevel === 'Level 5' ? 'e.g. 2025/2026' : 'e.g. 2025/2027'}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-mono font-bold"
               />
             </div>
+          </div>
+
+          {/* Duration Framework Indicator */}
+          <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs text-emerald-950 flex items-center justify-between">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">NVQ Level</label>
-              <select
-                value={yearForm.nvqLevel}
-                onChange={(e) => setYearForm({ ...yearForm, nvqLevel: e.target.value as NVQLevel })}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-medium"
-              >
-                <option value="Level 5">NVQ Level 5 (2 Semesters + 6M OJT)</option>
-                <option value="Level 6">NVQ Level 6 (4 Semesters + 6M OJT)</option>
-              </select>
+              <p className="font-extrabold text-emerald-900">
+                {yearForm.nvqLevel === 'Level 5'
+                  ? 'NVQ Level 5: 1 Academic Year Duration (ex. 2025/2026)'
+                  : 'NVQ Level 6: 2 Academic Years Duration (ex. 2025/2027)'}
+              </p>
+              <p className="text-[11px] text-emerald-700 mt-0.5">
+                {yearForm.nvqLevel === 'Level 5'
+                  ? 'Standard 1-year calendar: 2 Semesters Institutional + 6 Months OJT'
+                  : 'Standard 2-year calendar: 4 Semesters Institutional + 6 Months OJT'}
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const def = computeCodeAndDates(yearForm.nvqLevel, yearForm.startDate);
+                setYearForm((prev) => ({
+                  ...prev,
+                  code: def.code,
+                  name: def.name,
+                  endDate: def.endDate
+                }));
+              }}
+              className="text-[11px] font-bold text-emerald-800 bg-white px-2.5 py-1 rounded-lg border border-emerald-300 hover:bg-emerald-100 transition shadow-2xs shrink-0"
+              title="Recalculate code based on NVQ Level Duration"
+            >
+              Auto-Format
+            </button>
           </div>
 
           <div>
@@ -448,7 +533,7 @@ export const AcademicYearsPage: React.FC = () => {
               required
               value={yearForm.name}
               onChange={(e) => setYearForm({ ...yearForm, name: e.target.value })}
-              placeholder="e.g. Academic Year 2024/2025 (NVQ Level 5)"
+              placeholder={yearForm.nvqLevel === 'Level 5' ? 'e.g. Academic Year 2025/2026 (NVQ Level 5)' : 'e.g. Academic Year 2025/2027 (NVQ Level 6)'}
               className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500"
             />
           </div>
@@ -460,7 +545,7 @@ export const AcademicYearsPage: React.FC = () => {
                 type="date"
                 required
                 value={yearForm.startDate}
-                onChange={(e) => setYearForm({ ...yearForm, startDate: e.target.value })}
+                onChange={(e) => handleStartDateChange(e.target.value)}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500"
               />
             </div>

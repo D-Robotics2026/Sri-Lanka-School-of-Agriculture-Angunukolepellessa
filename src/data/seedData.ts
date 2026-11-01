@@ -131,7 +131,7 @@ export const SEED_ACADEMIC_YEARS: AcademicYear[] = [
     startDate: '2024-10-01',
     endDate: '2025-09-30',
     status: 'active',
-    description: 'National Certificate in Agriculture - 2 Semesters Institutional + 6 Months OJT'
+    description: '1-Year Curriculum: National Certificate in Agriculture (2 Semesters Institutional + 6 Months OJT)'
   },
   {
     id: 'ay-2023-l6',
@@ -141,7 +141,7 @@ export const SEED_ACADEMIC_YEARS: AcademicYear[] = [
     startDate: '2023-11-01',
     endDate: '2025-10-31',
     status: 'active',
-    description: 'National Diploma in Agricultural Production Technology - 4 Semesters Institutional + 6 Months OJT'
+    description: '2-Year Curriculum: National Diploma in Agricultural Production Technology (4 Semesters Institutional + 6 Months OJT)'
   },
   {
     id: 'ay-2025-l5',
@@ -151,7 +151,17 @@ export const SEED_ACADEMIC_YEARS: AcademicYear[] = [
     startDate: '2025-10-01',
     endDate: '2026-09-30',
     status: 'upcoming',
-    description: 'Next admission cycle for NVQ Level 5 candidates'
+    description: '1-Year Curriculum: 2 Semesters Institutional + 6 Months OJT (Intake 2025/2026)'
+  },
+  {
+    id: 'ay-2025-l6',
+    code: '2025/2027',
+    name: 'Academic Year 2025/2027 (NVQ Level 6 Intake)',
+    nvqLevel: 'Level 6',
+    startDate: '2025-10-01',
+    endDate: '2027-09-30',
+    status: 'upcoming',
+    description: '2-Year Curriculum: 4 Semesters Institutional + 6 Months OJT (Intake 2025/2027)'
   }
 ];
 
