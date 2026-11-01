@@ -477,8 +477,8 @@ export const AcademicYearsPage: React.FC = () => {
                 onChange={(e) => handleLevelChange(e.target.value as NVQLevel)}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-bold text-slate-800"
               >
-                <option value="Level 5">NVQ Level 5 (1 Year: ex. 2025/2026)</option>
-                <option value="Level 6">NVQ Level 6 (2 Years: ex. 2025/2027)</option>
+                <option value="Level 5">NVQ Level 5</option>
+                <option value="Level 6">NVQ Level 6</option>
               </select>
             </div>
             <div>
