@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
+import { NotificationBell } from '../common/NotificationBell';
 import { PasswordChangeModal } from '../common/PasswordChangeModal';
 import { useAuth } from '../../context/AuthContext';
-import { Menu } from 'lucide-react';
+import { Menu, Sprout } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,16 +25,42 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
-      {/* Mobile Drawer Trigger Button */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-30 p-2.5 rounded-xl bg-slate-900/90 text-white shadow-lg backdrop-blur-md hover:bg-slate-800 transition focus:outline-none no-print"
-        title="Open Navigation Menu"
-      >
-        <Menu size={20} />
-      </button>
+      {/* Sleek Mobile Header (Only visible on small viewports) */}
+      <header className="md:hidden fixed top-0 inset-x-0 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 flex items-center justify-between z-30 shadow-xs no-print">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-2 -ml-2 rounded-xl text-slate-700 hover:bg-slate-100 transition active:scale-95"
+            title="Open Menu"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-xs">
+              <Sprout size={16} />
+            </div>
+            <span className="font-extrabold text-sm text-slate-900 tracking-tight">
+              SOA Angunakolapelessa
+            </span>
+          </div>
+        </div>
 
-      {/* Full-Height Sidebar (Hosts Branding, Role Switcher, Nav Links & Profile) */}
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          {currentUser && (
+            <img
+              src={
+                currentUser.avatar ||
+                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
+              }
+              alt={currentUser.fullName}
+              className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+            />
+          )}
+        </div>
+      </header>
+
+      {/* Full-Height Sidebar (Hosts Branding, Nav Links & Profile) */}
       <Sidebar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -47,7 +74,7 @@ export const Layout: React.FC<LayoutProps> = ({
       <main
         className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-all ${
           isDedicatedMobileRole ? 'pb-20 md:pb-8' : 'pb-8'
-        } pt-14 md:pt-6`}
+        } pt-16 md:pt-6 animate-fade-in`}
       >
         <div className="max-w-7xl mx-auto">{children}</div>
       </main>

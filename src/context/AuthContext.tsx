@@ -5,6 +5,14 @@ import { SEED_SYSTEM_USERS } from '../data/seedData';
 interface AuthContextType {
   currentUser: SystemUser | null;
   login: (username: string, passwordHash: string) => { success: boolean; error?: string };
+  register: (data: {
+    fullName: string;
+    username: string;
+    email: string;
+    password: string;
+    role: UserRole;
+    phone?: string;
+  }) => { success: boolean; error?: string };
   logout: () => void;
   switchUser: (userId: string) => void;
   changePassword: (newPassword: string) => { success: boolean; error?: string };
@@ -93,6 +101,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
+  const register = (data: {
+    fullName: string;
+    username: string;
+    email: string;
+    password: string;
+    role: UserRole;
+    phone?: string;
+  }) => {
+    const cleanUsername = data.username.trim().toLowerCase();
+    const cleanEmail = data.email.trim().toLowerCase();
+
+    if (!data.fullName.trim()) {
+      return { success: false, error: 'Full name is required.' };
+    }
+    if (!cleanUsername) {
+      return { success: false, error: 'Username is required.' };
+    }
+    if (users.some((u) => u.username.toLowerCase() === cleanUsername)) {
+      return { success: false, error: 'Username is already taken.' };
+    }
+    if (users.some((u) => u.email.toLowerCase() === cleanEmail)) {
+      return { success: false, error: 'Email is already registered.' };
+    }
+    if (data.password.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters.' };
+    }
+
+    const newUser: SystemUser = {
+      id: `user-${Date.now()}`,
+      username: cleanUsername,
+      passwordHash: data.password,
+      role: data.role,
+      fullName: data.fullName.trim(),
+      email: cleanEmail,
+      phone: data.phone?.trim() || '',
+      mustChangePassword: false,
+      createdAt: new Date().toISOString(),
+      avatar:
+        data.role === 'student'
+          ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
+          : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80'
+    };
+
+    setUsers((prev) => [newUser, ...prev]);
+    setCurrentUser(newUser);
+    return { success: true };
+  };
+
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem(STORAGE_KEY_LOGGED_IN);
@@ -149,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         currentUser,
         login,
+        register,
         logout,
         switchUser,
         changePassword,
