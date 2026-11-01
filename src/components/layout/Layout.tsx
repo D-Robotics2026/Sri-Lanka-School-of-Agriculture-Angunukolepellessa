@@ -4,6 +4,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { NotificationBell } from '../common/NotificationBell';
 import { PasswordChangeModal } from '../common/PasswordChangeModal';
 import { useAuth } from '../../context/AuthContext';
+import { FIREBASE_DB_NAME } from '../../firebase/config';
 import { Menu, Sprout } from 'lucide-react';
 
 interface LayoutProps {
@@ -57,7 +58,13 @@ export const Layout: React.FC<LayoutProps> = ({
                 {currentUser?.role.replace('_', ' ')}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium">Department of Agriculture</p>
+            <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
+              <span>Department of Agriculture</span>
+              <span className="text-slate-300">•</span>
+              <span className="font-mono text-[9px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                DB: {FIREBASE_DB_NAME}
+              </span>
+            </p>
           </div>
         </div>
 

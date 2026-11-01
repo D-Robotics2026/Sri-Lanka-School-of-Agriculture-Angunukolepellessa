@@ -5,9 +5,11 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  updatePassword
+  updatePassword,
+  onAuthStateChanged,
+  User as FirebaseUser
 } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { auth, FIREBASE_DB_NAME } from '../firebase/config';
 
 export const BOOTSTRAP_SUPERADMIN: SystemUser = {
   id: 'user-superadmin',
@@ -24,10 +26,12 @@ export const BOOTSTRAP_SUPERADMIN: SystemUser = {
 
 interface AuthContextType {
   currentUser: SystemUser | null;
+  firebaseUser: FirebaseUser | null;
+  firebaseAuthStatus: 'connected' | 'unauthenticated' | 'error';
+  databaseName: string;
   login: (
     identifier: string,
-    passwordHash: string,
-    loginMode?: 'username' | 'phone'
+    passwordHash: string
   ) => Promise<{ success: boolean; error?: string }>;
   register: (data: {
     fullName: string;
@@ -77,7 +81,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return BOOTSTRAP_SUPERADMIN;
   });
 
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [firebaseAuthStatus, setFirebaseAuthStatus] = useState<'connected' | 'unauthenticated' | 'error'>('unauthenticated');
   const [mustChangePasswordOpen, setMustChangePasswordOpen] = useState(false);
+
+  // Real-time synchronization with Firebase Authentication
+  useEffect(() => {
+    const unsub = onAuthStateChanged(
+      auth,
+      (user) => {
+        setFirebaseUser(user);
+        setFirebaseAuthStatus(user ? 'connected' : 'unauthenticated');
+      },
+      (err) => {
+        console.warn('Firebase Auth listener:', err);
+        setFirebaseAuthStatus('error');
+      }
+    );
+    return () => unsub();
+  }, []);
 
   // Real-time synchronization with Firestore collection "users"
   useEffect(() => {
@@ -111,33 +133,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (
     identifier: string,
-    passwordInput: string,
-    loginMode: 'username' | 'phone' = 'username'
+    passwordInput: string
   ): Promise<{ success: boolean; error?: string }> => {
     const cleanId = identifier.trim().toLowerCase();
-    const cleanDigits = identifier.replace(/\D/g, '');
 
-    const found = users.find((u) => {
-      if (loginMode === 'phone') {
-        const uDigits = (u.phone || '').replace(/\D/g, '');
-        return uDigits.length >= 6 && (uDigits.endsWith(cleanDigits) || cleanDigits.endsWith(uDigits));
-      } else {
-        const uDigits = (u.phone || '').replace(/\D/g, '');
-        return (
-          u.username.toLowerCase() === cleanId ||
-          u.email.toLowerCase() === cleanId ||
-          (cleanDigits.length >= 6 && uDigits.length >= 6 && (uDigits.endsWith(cleanDigits) || cleanDigits.endsWith(uDigits)))
-        );
-      }
-    });
+    // 1. Locate user in registry
+    let found = users.find(
+      (u) => u.username.toLowerCase() === cleanId || u.email.toLowerCase() === cleanId
+    );
+
+    // If identifier matches bootstrap credentials
+    if (!found && (cleanId === 'superadmin' || cleanId === 'admin.soa@doa.gov.lk')) {
+      found = BOOTSTRAP_SUPERADMIN;
+    }
 
     if (!found) {
       return {
         success: false,
-        error:
-          loginMode === 'phone'
-            ? 'No registered account found matching this phone number.'
-            : 'Invalid username, ID or email.'
+        error: 'No registered user found matching this Username, ID, or Email.'
       };
     }
 
@@ -145,23 +158,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Invalid password credentials provided.' };
     }
 
-    // Sync authentication state with Firebase Authentication
+    // 2. Synchronize authentication state with Firebase Authentication
+    const authEmail = found.email || `${found.username}@soa.doa.gov.lk`;
     try {
-      const authEmail = found.email || `${found.username}@soa.doa.gov.lk`;
-      await signInWithEmailAndPassword(auth, authEmail, passwordInput).catch(async (authErr) => {
-        // If account exists in Firestore database but not in Firebase Auth, auto-provision in Firebase Auth
-        if (
-          authErr.code === 'auth/user-not-found' ||
-          authErr.code === 'auth/invalid-credential' ||
-          authErr.code === 'auth/invalid-email'
-        ) {
-          try {
-            await createUserWithEmailAndPassword(auth, authEmail, passwordInput);
-          } catch {}
+      await signInWithEmailAndPassword(auth, authEmail, passwordInput);
+    } catch (authErr: any) {
+      if (authErr.code === 'auth/operation-not-allowed') {
+        console.warn('Firebase Auth: Email/Password provider is disabled in Firebase Console.');
+      } else if (
+        authErr.code === 'auth/user-not-found' ||
+        authErr.code === 'auth/invalid-credential' ||
+        authErr.code === 'auth/invalid-email'
+      ) {
+        // Auto-provision user into Firebase Authentication
+        try {
+          await createUserWithEmailAndPassword(auth, authEmail, passwordInput);
+        } catch (createErr) {
+          console.warn('Firebase Auth auto-provision notice:', createErr);
         }
-      });
-    } catch (e) {
-      console.warn('Firebase Auth synchronization notice:', e);
+      } else {
+        console.warn('Firebase Auth signin notice:', authErr?.message);
+      }
     }
 
     const updatedUser = {
@@ -312,6 +329,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         currentUser,
+        firebaseUser,
+        firebaseAuthStatus,
+        databaseName: FIREBASE_DB_NAME,
         login,
         register,
         logout,

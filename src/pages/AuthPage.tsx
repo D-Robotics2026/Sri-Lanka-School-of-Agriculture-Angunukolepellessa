@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { FIREBASE_DB_NAME } from '../firebase/config';
 import {
   Sprout,
   Lock,
   User,
-  Phone,
   ArrowRight,
   Eye,
   EyeOff,
@@ -24,7 +24,6 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
   const { login } = useAuth();
 
   // Login form state
-  const [loginMode, setLoginMode] = useState<'username' | 'phone'>('username');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +36,7 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
     setIsSubmitting(true);
 
     try {
-      const res = await login(identifier, password, loginMode);
+      const res = await login(identifier, password);
       if (!res.success) {
         setLoginError(res.error || 'Invalid credentials provided.');
       }
@@ -106,7 +105,7 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
           <div className="relative z-10 pt-6 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
             <div className="flex items-center gap-1.5">
               <Database size={13} className="text-emerald-400" />
-              <span>Firebase Auth & Cloud Sync</span>
+              <span>DB: {FIREBASE_DB_NAME}</span>
             </div>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50">
               ACTIVE
@@ -133,40 +132,6 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
               </p>
             </div>
 
-            {/* Login Mode Switcher Tabs: Username/ID vs Phone */}
-            <div className="flex items-center p-1 bg-slate-100 rounded-xl mb-5">
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginMode('username');
-                  setLoginError(null);
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
-                  loginMode === 'username'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <User size={14} />
-                <span>Username or ID</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginMode('phone');
-                  setLoginError(null);
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
-                  loginMode === 'phone'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Phone size={14} />
-                <span>Phone Number</span>
-              </button>
-            </div>
-
             {loginError && (
               <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-center gap-2 animate-fade-in">
                 <AlertCircle size={15} className="shrink-0 text-rose-600" />
@@ -177,26 +142,18 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {loginMode === 'username' ? 'Username, ID or Email' : 'Registered Phone Number'}
+                  Username, ID or Email
                 </label>
                 <div className="relative">
                   <input
-                    type={loginMode === 'phone' ? 'tel' : 'text'}
+                    type="text"
                     required
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder={
-                      loginMode === 'username'
-                        ? 'e.g. username, student index or email'
-                        : 'e.g. 077 123 4567 or +94 77 123 4567'
-                    }
+                    placeholder="e.g. username, student index or email"
                     className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium transition"
                   />
-                  {loginMode === 'username' ? (
-                    <User size={15} className="absolute left-3 top-3 text-slate-400" />
-                  ) : (
-                    <Phone size={15} className="absolute left-3 top-3 text-slate-400" />
-                  )}
+                  <User size={15} className="absolute left-3 top-3 text-slate-400" />
                 </div>
               </div>
 
@@ -236,11 +193,16 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
             </form>
           </div>
 
-          {/* Security & Firebase Auth Indicator (Default Super Admin Credentials Box Removed) */}
-          <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-center gap-2 text-xs text-slate-400">
-            <ShieldCheck size={15} className="text-emerald-600" />
-            <span className="font-medium text-slate-500">
-              Secured by Firebase Authentication & Cloud Firestore
+          {/* Security & Firebase Database Indicator */}
+          <div className="mt-8 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
+              <span className="font-medium text-slate-600">
+                Firebase Authentication & Cloud Firestore
+              </span>
+            </div>
+            <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+              DB: {FIREBASE_DB_NAME}
             </span>
           </div>
         </div>
