@@ -59,6 +59,13 @@ export const AcademicYearsPage: React.FC = () => {
     maxCapacity: 40
   });
 
+  // Helper to generate standard Academic Year Title from NVQ Level and Code
+  const generateYearTitle = (level: NVQLevel, code: string) => {
+    const cleanCode = code.trim();
+    const levelLabel = level === 'Level 5' ? 'NVQ Level 5' : 'NVQ Level 6';
+    return cleanCode ? `Academic Year ${cleanCode} (${levelLabel})` : `Academic Year (${levelLabel})`;
+  };
+
   // Helper to compute academic year code, end date and default name based on level
   // NVQ Level 5 = 1 year duration (ex. 2025/2026)
   // NVQ Level 6 = 2 years duration (ex. 2025/2027)
@@ -67,17 +74,19 @@ export const AcademicYearsPage: React.FC = () => {
     const safeStartYear = isNaN(startYear) ? 2025 : startYear;
     if (level === 'Level 5') {
       const endYear = safeStartYear + 1; // 1-year duration
+      const code = `${safeStartYear}/${endYear}`;
       return {
-        code: `${safeStartYear}/${endYear}`,
+        code,
         endDate: `${endYear}-09-30`,
-        name: `Academic Year ${safeStartYear}/${endYear} (NVQ Level 5)`
+        name: generateYearTitle(level, code)
       };
     } else {
       const endYear = safeStartYear + 2; // 2-year duration
+      const code = `${safeStartYear}/${endYear}`;
       return {
-        code: `${safeStartYear}/${endYear}`,
+        code,
         endDate: `${endYear}-09-30`,
-        name: `Academic Year ${safeStartYear}/${endYear} (NVQ Level 6)`
+        name: generateYearTitle(level, code)
       };
     }
   };
@@ -100,14 +109,14 @@ export const AcademicYearsPage: React.FC = () => {
     setYearModalOpen(true);
   };
 
-  // Handle changing Level in modal (recomputes code and end date)
+  // Handle changing Level in modal (recomputes code, dates, and automatically updates title)
   const handleLevelChange = (newLevel: NVQLevel) => {
     const defaults = computeCodeAndDates(newLevel, yearForm.startDate);
     setYearForm((prev) => ({
       ...prev,
       nvqLevel: newLevel,
       code: defaults.code,
-      name: defaults.name,
+      name: generateYearTitle(newLevel, defaults.code),
       endDate: defaults.endDate,
       description: newLevel === 'Level 5'
         ? '1-Year Curriculum: 2 Semesters Institutional + 6 Months OJT'
@@ -115,7 +124,7 @@ export const AcademicYearsPage: React.FC = () => {
     }));
   };
 
-  // Handle changing Start Date in modal (recomputes code and end date)
+  // Handle changing Start Date in modal (recomputes code, end date, and automatically updates title)
   const handleStartDateChange = (newStartDate: string) => {
     const defaults = computeCodeAndDates(yearForm.nvqLevel, newStartDate);
     setYearForm((prev) => ({
@@ -123,7 +132,7 @@ export const AcademicYearsPage: React.FC = () => {
       startDate: newStartDate,
       code: defaults.code,
       endDate: defaults.endDate,
-      name: defaults.name
+      name: generateYearTitle(prev.nvqLevel, defaults.code)
     }));
   };
 
@@ -487,7 +496,14 @@ export const AcademicYearsPage: React.FC = () => {
                 type="text"
                 required
                 value={yearForm.code}
-                onChange={(e) => setYearForm({ ...yearForm, code: e.target.value })}
+                onChange={(e) => {
+                  const newCode = e.target.value;
+                  setYearForm((prev) => ({
+                    ...prev,
+                    code: newCode,
+                    name: generateYearTitle(prev.nvqLevel, newCode)
+                  }));
+                }}
                 placeholder={yearForm.nvqLevel === 'Level 5' ? 'e.g. 2025/2026' : 'e.g. 2025/2027'}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-mono font-bold"
               />
@@ -515,7 +531,7 @@ export const AcademicYearsPage: React.FC = () => {
                 setYearForm((prev) => ({
                   ...prev,
                   code: def.code,
-                  name: def.name,
+                  name: generateYearTitle(yearForm.nvqLevel, def.code),
                   endDate: def.endDate
                 }));
               }}
@@ -527,14 +543,34 @@ export const AcademicYearsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Academic Year Title</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700">Academic Year Title</label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                  Auto-filled from Level & Code
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setYearForm((prev) => ({
+                      ...prev,
+                      name: generateYearTitle(prev.nvqLevel, prev.code)
+                    }));
+                  }}
+                  className="text-[10px] text-slate-500 hover:text-emerald-700 underline font-medium"
+                  title="Regenerate Title from NVQ Level and Code"
+                >
+                  Regenerate
+                </button>
+              </div>
+            </div>
             <input
               type="text"
               required
               value={yearForm.name}
               onChange={(e) => setYearForm({ ...yearForm, name: e.target.value })}
               placeholder={yearForm.nvqLevel === 'Level 5' ? 'e.g. Academic Year 2025/2026 (NVQ Level 5)' : 'e.g. Academic Year 2025/2027 (NVQ Level 6)'}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500"
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-medium text-slate-900 bg-slate-50/50"
             />
           </div>
 
