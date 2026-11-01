@@ -331,3 +331,40 @@ export interface SystemSettings {
   library: FineSettings;
   allowSelfRegistration: boolean;
 }
+
+// Role-based Access Control Permissions Map
+export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  super_admin: [
+    'dashboard', 'academics', 'students', 'lecturers', 'modules',
+    'attendance', 'assessments', 'ojt', 'library', 'hostel',
+    'reports', 'notifications', 'settings'
+  ],
+  admin: [
+    'dashboard', 'academics', 'students', 'lecturers', 'modules',
+    'attendance', 'assessments', 'ojt', 'library', 'hostel',
+    'reports', 'notifications', 'settings'
+  ],
+  registrar: [
+    'dashboard', 'academics', 'students', 'modules',
+    'attendance', 'ojt', 'reports', 'notifications'
+  ],
+  lecturer: [
+    'dashboard', 'students', 'modules',
+    'attendance', 'assessments', 'notifications'
+  ],
+  librarian: [
+    'dashboard', 'library', 'notifications'
+  ],
+  hostel_warden: [
+    'dashboard', 'hostel', 'students', 'notifications'
+  ],
+  student: [
+    'dashboard', 'attendance', 'assessments',
+    'ojt', 'library', 'hostel', 'modules', 'notifications'
+  ]
+};
+
+export const isTabAllowedForRole = (role: UserRole, tab: string): boolean => {
+  const allowed = ROLE_PERMISSIONS[role];
+  return allowed ? allowed.includes(tab) : false;
+};

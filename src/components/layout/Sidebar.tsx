@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { isTabAllowedForRole } from '../../types';
 import { QuickSwitcher } from '../common/QuickSwitcher';
 import { NotificationBell } from '../common/NotificationBell';
 import {
@@ -131,11 +132,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
 
-  // Filter items by user role
-  const visibleItems = navItems.filter((item) => {
-    if (!item.roles) return true;
-    return item.roles.includes(currentUser.role);
-  });
+  // Filter items strictly by user role permissions
+  const visibleItems = navItems.filter((item) => isTabAllowedForRole(currentUser.role, item.id));
 
   const handleSelect = (id: string) => {
     setCurrentTab(id);
