@@ -4,6 +4,7 @@ import { Student, NVQLevel, EnrollmentStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { BarcodeDisplay } from '../components/common/BarcodeDisplay';
+import { formatDate } from '../utils/dateUtils';
 import {
   GraduationCap,
   Plus,
@@ -496,7 +497,7 @@ export const StudentsPage: React.FC = () => {
                 </p>
                 <p>
                   <span className="text-slate-400">Date of Birth:</span>{' '}
-                  <span className="font-medium text-slate-700">{selectedStudent.dob}</span>
+                  <span className="font-medium text-slate-700">{formatDate(selectedStudent.dob)}</span>
                 </p>
                 <p>
                   <span className="text-slate-400">Phone:</span>{' '}
@@ -538,7 +539,7 @@ export const StudentsPage: React.FC = () => {
                 </p>
                 <p>
                   <span className="text-slate-400">Enrolled On:</span>{' '}
-                  <span className="font-medium text-slate-700">{selectedStudent.enrollmentDate}</span>
+                  <span className="font-medium text-slate-700">{formatDate(selectedStudent.enrollmentDate)}</span>
                 </p>
               </div>
             </div>

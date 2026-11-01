@@ -10,6 +10,7 @@ import {
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { PrintHeader } from '../components/common/PrintHeader';
+import { formatDateTime } from '../utils/dateUtils';
 import {
   UtensilsCrossed,
   Plus,
@@ -309,10 +310,7 @@ export const HostelMealsPage: React.FC = () => {
               <p className="text-xs text-slate-500 mt-0.5">
                 Lock Deadline:{' '}
                 <span className="font-mono font-semibold text-slate-700">
-                  {new Date(selectedWeek.submissionDeadline).toLocaleString('en-GB', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                  })}
+                  {formatDateTime(selectedWeek.submissionDeadline)}
                 </span>
               </p>
             </div>

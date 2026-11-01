@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { SystemUser, UserRole } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { formatDate } from '../utils/dateUtils';
 import {
   Settings,
   Shield,
@@ -384,7 +385,7 @@ export const SettingsPage: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                      {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
                     </td>
 
                     <td className="py-3 px-4 text-right">

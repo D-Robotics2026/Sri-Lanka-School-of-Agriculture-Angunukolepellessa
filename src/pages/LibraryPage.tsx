@@ -5,6 +5,7 @@ import { Book, BorrowRecord, BookReservation } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { StatCard } from '../components/common/StatCard';
+import { formatDate } from '../utils/dateUtils';
 import {
   Library,
   BookOpen,
@@ -435,9 +436,9 @@ export const LibraryPage: React.FC = () => {
                         <div className="text-[11px] font-mono text-slate-400">{rec.studentIndex}</div>
                       </td>
 
-                      <td className="py-3 px-4">
-                        <div>Issue: <span className="font-medium text-slate-700">{rec.issueDate}</span></div>
-                        <div>Due: <span className="font-bold text-slate-900">{rec.dueDate}</span></div>
+                      <td className="py-3 px-4 font-mono text-xs">
+                        <div>Issue: <span className="font-medium text-slate-700">{formatDate(rec.issueDate)}</span></div>
+                        <div>Due: <span className="font-bold text-slate-900">{formatDate(rec.dueDate)}</span></div>
                       </td>
 
                       <td className="py-3 px-4">
@@ -533,7 +534,7 @@ export const LibraryPage: React.FC = () => {
                         <div>{stu?.fullName}</div>
                         <span className="font-mono text-slate-400">{res.studentIndex}</span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600">{res.reservedDate}</td>
+                      <td className="py-3 px-4 text-slate-600 font-mono text-xs">{formatDate(res.reservedDate)}</td>
                       <td className="py-3 px-4 font-bold text-slate-800">#{res.queuePosition}</td>
                       <td className="py-3 px-4">
                         <Badge variant={res.status === 'active' ? 'amber' : 'green'}>

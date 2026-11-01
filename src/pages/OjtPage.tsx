@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { OJTPlacement, OJTMonthlyReport } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { formatDate } from '../utils/dateUtils';
 import {
   Briefcase,
   Plus,
@@ -295,8 +296,8 @@ export const OjtPage: React.FC = () => {
                     <span className="text-[10px] text-slate-400 uppercase font-bold block">
                       6-Month Training Duration
                     </span>
-                    <div className="font-semibold text-slate-800">
-                      {plc.startDate} to {plc.endDate}
+                    <div className="font-semibold text-slate-800 font-mono">
+                      {formatDate(plc.startDate)} to {formatDate(plc.endDate)}
                     </div>
                     <span className="text-emerald-700 font-bold text-[11px]">
                       {approvedReportsCount} of 6 Reports Approved

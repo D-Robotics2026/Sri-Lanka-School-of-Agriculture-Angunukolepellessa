@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { SystemNotification, NotificationPriority, NotificationType, UserRole } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { formatDate } from '../utils/dateUtils';
 import {
   Bell,
   Plus,
@@ -188,13 +189,9 @@ export const NotificationsPage: React.FC = () => {
 
                     <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-400">
                       <span>Sender: <strong className="text-slate-700">{notif.senderName}</strong></span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 font-mono">
                         <Clock size={12} />
-                        {new Date(notif.createdAt).toLocaleDateString('en-GB', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric'
-                        })}
+                        {formatDate(notif.createdAt)}
                       </span>
                     </div>
                   </div>

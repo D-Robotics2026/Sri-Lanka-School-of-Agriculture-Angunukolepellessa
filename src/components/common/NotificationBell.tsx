@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Bell, CheckCheck, Clock, AlertTriangle, Book, Calendar, Utensils, Award } from 'lucide-react';
 import { NotificationType } from '../../types';
+import { formatDate } from '../../utils/dateUtils';
 
 export const NotificationBell: React.FC = () => {
   const { currentUser } = useAuth();
@@ -128,12 +129,9 @@ export const NotificationBell: React.FC = () => {
                           </p>
                           <div className="flex items-center justify-between mt-2 text-[10px] text-slate-400">
                             <span>From: {notif.senderName}</span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1 font-mono">
                               <Clock size={10} />
-                              {new Date(notif.createdAt).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric'
-                              })}
+                              {formatDate(notif.createdAt)}
                             </span>
                           </div>
                         </div>

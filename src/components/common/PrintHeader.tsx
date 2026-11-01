@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDate } from '../../utils/dateUtils';
 
 interface PrintHeaderProps {
   title: string;
@@ -11,11 +12,7 @@ export const PrintHeader: React.FC<PrintHeaderProps> = ({
   subtitle,
   referenceNumber
 }) => {
-  const currentDate = new Date().toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
+  const currentDate = formatDate(new Date());
 
   return (
     <div className="mb-6 border-b-2 border-slate-900 pb-4 text-center">

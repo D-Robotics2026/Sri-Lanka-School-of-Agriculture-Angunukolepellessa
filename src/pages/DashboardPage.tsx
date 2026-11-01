@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { StatCard } from '../components/common/StatCard';
 import { Badge } from '../components/common/Badge';
 import { BarcodeDisplay } from '../components/common/BarcodeDisplay';
+import { formatDate, formatDateTime } from '../utils/dateUtils';
 import {
   Users,
   GraduationCap,
@@ -224,7 +225,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               <div className="flex justify-between items-center text-xs mb-2">
                 <span className="font-semibold text-slate-700">{activeMealWeek.title}</span>
                 <span className="text-slate-500 font-mono text-[11px]">
-                  Deadline: {new Date(activeMealWeek.submissionDeadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  Deadline: {formatDateTime(activeMealWeek.submissionDeadline)}
                 </span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -530,7 +531,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           {stu?.fullName} <span className="font-mono text-[11px] text-slate-400">({rec.studentIndex})</span>
                         </td>
                         <td className="py-2.5 px-3 font-medium text-slate-800">{bk?.title}</td>
-                        <td className="py-2.5 px-3 font-mono text-rose-600 font-bold">{rec.dueDate}</td>
+                        <td className="py-2.5 px-3 font-mono text-rose-600 font-bold">{formatDate(rec.dueDate)}</td>
                         <td className="py-2.5 px-3 font-mono font-bold text-slate-900">LKR {rec.fineAmount}.00</td>
                         <td className="py-2.5 px-3 text-right">
                           <button

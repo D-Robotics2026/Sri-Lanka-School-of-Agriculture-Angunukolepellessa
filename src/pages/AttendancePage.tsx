@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { AttendanceSession, AttendanceType, AttendanceRecordStatus, StudentAttendanceEntry } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { formatDate } from '../utils/dateUtils';
 import {
   CheckSquare,
   Plus,
@@ -236,7 +237,7 @@ export const AttendancePage: React.FC = () => {
                   return (
                     <tr key={sess.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-bold text-slate-800">{sess.date}</div>
+                        <div className="font-bold text-slate-800 font-mono">{formatDate(sess.date)}</div>
                         <div className="text-[11px] font-mono text-slate-500">
                           {sess.startTime} - {sess.endTime}
                         </div>
@@ -559,7 +560,7 @@ export const AttendancePage: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-slate-500">Date & Hours:</span>
                 <span className="font-bold text-slate-800">
-                  {viewingSession.date} ({viewingSession.startTime} - {viewingSession.endTime}) = {viewingSession.computedHours} hrs
+                  {formatDate(viewingSession.date)} ({viewingSession.startTime} - {viewingSession.endTime}) = {viewingSession.computedHours} hrs
                 </span>
               </div>
               <div className="flex justify-between">

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Assignment, PracticalTest, AssignmentStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { formatDate } from '../utils/dateUtils';
 import {
   FileSpreadsheet,
   Plus,
@@ -266,7 +267,7 @@ export const AssessmentsPage: React.FC = () => {
                     <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
                       <div className="flex items-center gap-1.5">
                         <Calendar size={13} className="text-slate-400" />
-                        <span>Due: <strong className="text-slate-800">{asn.dueDate}</strong></span>
+                        <span>Due: <strong className="text-slate-800 font-mono">{formatDate(asn.dueDate)}</strong></span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <CheckCircle size={13} className="text-emerald-600" />
@@ -364,7 +365,7 @@ export const AssessmentsPage: React.FC = () => {
 
                     <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
                       <span>Venue: <strong className="text-slate-800">{test.venue}</strong></span>
-                      <span>Date: <strong className="text-slate-800">{test.scheduledDate}</strong></span>
+                      <span>Date: <strong className="text-slate-800 font-mono">{formatDate(test.scheduledDate)}</strong></span>
                       <span>Candidates Assessed: <strong>{scoredCount}</strong></span>
                     </div>
                   </div>
