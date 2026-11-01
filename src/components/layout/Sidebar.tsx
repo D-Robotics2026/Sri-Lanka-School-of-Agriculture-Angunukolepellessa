@@ -159,9 +159,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-slate-950 text-slate-300 select-none">
-      {/* Branding Header */}
+      {/* Branding Header - Locked at top */}
       <div
-        className={`p-4 border-b border-slate-800/80 flex items-center ${
+        className={`shrink-0 p-4 border-b border-slate-800/80 flex items-center ${
           collapsed ? 'justify-center' : 'justify-between'
         }`}
       >
@@ -190,23 +190,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Desktop & Tablet Collapse / Expand Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition ml-1"
+          className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors ml-1 active:scale-95"
           title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          <div className="transition-transform duration-300">
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </div>
         </button>
 
         {/* Mobile Close Button */}
         <button
           onClick={() => setMobileOpen(false)}
-          className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+          className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition active:scale-95"
           title="Close Navigation"
         >
           <X size={18} />
         </button>
       </div>
 
-      {/* Navigation Links - Clean Single-Line Items Without Description */}
+      {/* Navigation Links - Clean Single-Line Items with Smooth Animations */}
       <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-1">
         {visibleItems.map((item) => {
           const Icon = item.icon;
@@ -217,24 +219,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleSelect(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-150 group relative text-xs ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative text-xs ${
                 isActive
-                  ? 'bg-emerald-600 text-white shadow-xs font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900 font-medium'
-              } ${collapsed ? 'justify-center' : ''}`}
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-md shadow-emerald-950/60 font-bold scale-[1.02] ring-1 ring-emerald-400/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/90 font-medium hover:translate-x-1'
+              } ${collapsed ? 'justify-center !px-2' : ''}`}
               title={collapsed ? item.label : undefined}
             >
               <Icon
                 size={18}
-                className={`shrink-0 transition-transform ${
+                className={`shrink-0 transition-transform duration-200 ${
                   isActive
-                    ? 'text-white'
-                    : 'text-slate-400 group-hover:text-emerald-400'
+                    ? 'text-white scale-110'
+                    : 'text-slate-400 group-hover:text-emerald-400 group-hover:scale-110'
                 }`}
               />
 
               {!collapsed && (
-                <span className="flex-1 text-left truncate tracking-tight">
+                <span className="flex-1 text-left truncate tracking-tight transition-opacity duration-200">
                   {item.label}
                 </span>
               )}
@@ -250,8 +252,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* Cloud Sync Status & User Profile Footer */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-950 space-y-2.5">
+      {/* Cloud Sync Status & User Profile Footer - Locked at bottom */}
+      <div className="shrink-0 p-3 border-t border-slate-800/80 bg-slate-950 space-y-2.5">
         {/* Real-time Firebase Sync Pill */}
         {!collapsed && (
           <div className="px-2.5 py-1.5 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between text-[10px]">
@@ -337,13 +339,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Desktop & Tablet Sidebar */}
+      {/* Desktop & Tablet Sidebar - Locked to screen height */}
       <aside
-        className={`hidden md:block shrink-0 transition-all duration-300 no-print z-20 ${
+        className={`hidden md:flex flex-col h-full shrink-0 transition-[width] duration-300 ease-in-out no-print z-20 ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
-        <div className="sticky top-0 h-screen border-r border-slate-800/80">
+        <div className="h-full w-full flex flex-col border-r border-slate-800/80 bg-slate-950">
           {sidebarContent}
         </div>
       </aside>
@@ -352,10 +354,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden no-print">
           <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-fade-in"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-50 shadow-2xl animate-slide-left">
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-50 shadow-2xl animate-slide-left h-full flex flex-col">
             {sidebarContent}
           </div>
         </div>

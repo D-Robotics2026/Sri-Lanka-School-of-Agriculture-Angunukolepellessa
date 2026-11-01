@@ -6,12 +6,14 @@ import {
   CheckSquare,
   FileSpreadsheet,
   Library,
-  Users,
+  GraduationCap,
   CalendarDays,
   Briefcase,
   BarChart3,
-  Menu,
-  Bell
+  BookOpenCheck,
+  Clock,
+  Bell,
+  Sprout
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -33,94 +35,132 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     id: string;
     label: string;
     icon: React.ElementType;
-    isAction?: boolean;
   }
 
-  const getRoleTabs = (): TabItem[] => {
+  const getRoleTabs = (): { left: [TabItem, TabItem]; right: [TabItem, TabItem] } => {
     switch (currentUser.role) {
       case 'student':
-        return [
-          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-          { id: 'attendance', label: 'Attendance', icon: CheckSquare },
-          { id: 'hostel', label: '7×3 Meals', icon: UtensilsCrossed },
-          { id: 'assessments', label: 'Tasks', icon: FileSpreadsheet }
-        ];
+        return {
+          left: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'attendance', label: 'Attendance', icon: CheckSquare }
+          ],
+          right: [
+            { id: 'hostel', label: '7×3 Meals', icon: UtensilsCrossed },
+            { id: 'assessments', label: 'Tasks', icon: FileSpreadsheet }
+          ]
+        };
       case 'hostel_warden':
-        return [
-          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-          { id: 'hostel', label: 'Meals', icon: UtensilsCrossed },
-          { id: 'students', label: 'Boarders', icon: Users },
-          { id: 'reports', label: 'Kitchen Sheet', icon: BarChart3 }
-        ];
+        return {
+          left: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'hostel', label: 'Meals', icon: UtensilsCrossed }
+          ],
+          right: [
+            { id: 'students', label: 'Boarders', icon: GraduationCap },
+            { id: 'reports', label: 'Kitchen', icon: BarChart3 }
+          ]
+        };
       case 'librarian':
-        return [
-          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-          { id: 'library', label: 'Library', icon: Library },
-          { id: 'notifications', label: 'Notices', icon: Bell }
-        ];
+        return {
+          left: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'library', label: 'Books', icon: Library }
+          ],
+          right: [
+            { id: 'reports', label: 'Circulation', icon: Clock },
+            { id: 'notifications', label: 'Notices', icon: Bell }
+          ]
+        };
       case 'lecturer':
-        return [
-          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-          { id: 'modules', label: 'Modules', icon: FileSpreadsheet },
-          { id: 'attendance', label: 'Attendance', icon: CheckSquare },
-          { id: 'assessments', label: 'Grading', icon: FileSpreadsheet }
-        ];
+        return {
+          left: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'modules', label: 'Modules', icon: BookOpenCheck }
+          ],
+          right: [
+            { id: 'attendance', label: 'Attendance', icon: CheckSquare },
+            { id: 'assessments', label: 'Grading', icon: FileSpreadsheet }
+          ]
+        };
       case 'registrar':
-        return [
-          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-          { id: 'academics', label: 'Batches', icon: CalendarDays },
-          { id: 'students', label: 'Students', icon: Users },
-          { id: 'ojt', label: 'OJT', icon: Briefcase }
-        ];
+        return {
+          left: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'academics', label: 'Batches', icon: CalendarDays }
+          ],
+          right: [
+            { id: 'students', label: 'Students', icon: GraduationCap },
+            { id: 'ojt', label: 'OJT Trainees', icon: Briefcase }
+          ]
+        };
       case 'admin':
       case 'super_admin':
       default:
-        return [
-          { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-          { id: 'academics', label: 'Batches', icon: CalendarDays },
-          { id: 'students', label: 'Students', icon: Users },
-          { id: 'attendance', label: 'Attendance', icon: CheckSquare }
-        ];
+        return {
+          left: [
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'academics', label: 'Batches', icon: CalendarDays }
+          ],
+          right: [
+            { id: 'students', label: 'Students', icon: GraduationCap },
+            { id: 'attendance', label: 'Attendance', icon: CheckSquare }
+          ]
+        };
     }
   };
 
-  const tabs = getRoleTabs();
+  const { left, right } = getRoleTabs();
+
+  const renderTabButton = (tab: TabItem) => {
+    const Icon = tab.icon;
+    const isActive = currentTab === tab.id;
+    return (
+      <button
+        key={tab.id}
+        onClick={() => setCurrentTab(tab.id)}
+        className={`flex-1 flex flex-col items-center justify-center py-1 transition-all duration-200 active:scale-95 ${
+          isActive
+            ? 'text-emerald-700 font-bold scale-105'
+            : 'text-slate-400 hover:text-slate-700 font-medium'
+        }`}
+      >
+        <div className={`p-1 rounded-xl transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : ''}`}>
+          <Icon size={19} className={isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'} />
+        </div>
+        <span className="text-[10px] mt-0.5 tracking-tight leading-none">{tab.label}</span>
+        {isActive && <div className="w-1 h-1 bg-emerald-600 rounded-full mt-0.5" />}
+      </button>
+    );
+  };
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 z-40 px-2 py-1.5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] no-print">
-      <div className="flex items-center justify-around">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = currentTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setCurrentTab(tab.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-150 ${
-                isActive
-                  ? 'text-emerald-700 font-bold scale-105'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <div className={`p-1 rounded-lg ${isActive ? 'bg-emerald-50 text-emerald-700' : ''}`}>
-                <Icon size={19} className={isActive ? 'stroke-[2.5]' : ''} />
-              </div>
-              <span className="text-[10px] mt-0.5 tracking-tight font-medium">{tab.label}</span>
-            </button>
-          );
-        })}
+    <nav className="md:hidden fixed bottom-3 inset-x-3 sm:inset-x-8 max-w-md mx-auto z-40 no-print animate-fade-up">
+      {/* Floating Pill Dock Capsule matching SynapGro design theme */}
+      <div className="relative bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] px-2 py-1 flex items-center justify-between">
+        
+        {/* Left 2 Action Items */}
+        <div className="flex-1 flex items-center justify-around">
+          {left.map(renderTabButton)}
+        </div>
 
-        {/* More / Menu Drawer Toggle Tab */}
-        <button
-          onClick={onOpenMenu}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 hover:text-slate-900 transition-all duration-150 active:scale-95"
-          title="Open Full Menu"
-        >
-          <div className="p-1 rounded-lg bg-slate-100 text-slate-700">
-            <Menu size={19} />
-          </div>
-          <span className="text-[10px] mt-0.5 tracking-tight font-medium">Menu</span>
-        </button>
+        {/* Center Floating Elevated Action Button */}
+        <div className="relative -top-4 px-2 flex flex-col items-center shrink-0">
+          <button
+            onClick={onOpenMenu}
+            className="w-13 h-13 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/35 ring-4 ring-slate-100 flex items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105"
+            title="Open Operations Menu"
+          >
+            <Sprout size={24} className="stroke-[2.5]" />
+          </button>
+          <span className="text-[9px] font-bold text-emerald-800 tracking-tight mt-0.5">Explore</span>
+        </div>
+
+        {/* Right 2 Action Items */}
+        <div className="flex-1 flex items-center justify-around">
+          {right.map(renderTabButton)}
+        </div>
+
       </div>
     </nav>
   );

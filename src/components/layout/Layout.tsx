@@ -37,28 +37,31 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans overflow-x-hidden">
-      {/* Sleek Mobile Header (Only visible on small viewports) */}
-      <header className="md:hidden fixed top-0 inset-x-0 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 flex items-center justify-between z-30 shadow-xs no-print">
-        <div className="flex items-center gap-2.5">
+    <div className="h-screen w-screen bg-slate-50 flex font-sans overflow-hidden">
+      {/* Sleek Mobile Header matching SynapGro theme */}
+      <header className="md:hidden fixed top-0 inset-x-0 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 flex items-center justify-between z-30 shadow-2xs no-print">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 -ml-2 rounded-xl text-slate-700 hover:bg-slate-100 transition active:scale-95"
+            className="w-10 h-10 rounded-full border border-slate-200/90 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50 shadow-2xs transition active:scale-95"
             title="Open Menu"
           >
-            <Menu size={20} />
+            <Menu size={18} />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-xs">
-              <Sprout size={16} />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-sm text-slate-900 tracking-tight">
+                SOA Angunakolapelessa
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100/70 text-emerald-800 capitalize">
+                {currentUser?.role.replace('_', ' ')}
+              </span>
             </div>
-            <span className="font-extrabold text-sm text-slate-900 tracking-tight">
-              SOA Angunakolapelessa
-            </span>
+            <p className="text-[11px] text-slate-500 font-medium">Department of Agriculture</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <NotificationBell />
           {currentUser && (
             <img
@@ -67,7 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
               }
               alt={currentUser.fullName}
-              className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/20 shadow-2xs"
             />
           )}
         </div>
@@ -85,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Main Content Area with Page Switch Animation & Non-Clipping Flexbox Width */}
       <main
-        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 transition-all pb-24 md:pb-8 pt-16 md:pt-6"
+        className="flex-1 h-full min-w-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 transition-all pb-28 md:pb-8 pt-20 md:pt-6"
       >
         <div key={currentTab} className="max-w-7xl mx-auto w-full animate-fade-up">
           {children}
