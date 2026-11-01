@@ -13,7 +13,7 @@ import {
   BookOpenCheck,
   Clock,
   Bell,
-  Sprout
+  Menu
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -144,16 +144,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           {left.map(renderTabButton)}
         </div>
 
-        {/* Center Floating Elevated Action Button */}
-        <div className="relative -top-4 px-2 flex flex-col items-center shrink-0">
+        {/* Center Floating Elevated Main Menu Button matching SynapGro */}
+        <div className="relative -top-4 px-1.5 flex flex-col items-center shrink-0">
           <button
             onClick={onOpenMenu}
-            className="w-13 h-13 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/35 ring-4 ring-slate-100 flex items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105"
-            title="Open Operations Menu"
+            className="w-13 h-13 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/35 ring-4 ring-white flex items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105"
+            title="Open Menu"
           >
-            <Sprout size={24} className="stroke-[2.5]" />
+            <Menu size={22} className="stroke-[2.5]" />
           </button>
-          <span className="text-[9px] font-bold text-emerald-800 tracking-tight mt-0.5">Explore</span>
+          <span className="text-[10px] font-bold text-slate-700 tracking-tight mt-0.5">Menu</span>
         </div>
 
         {/* Right 2 Action Items */}

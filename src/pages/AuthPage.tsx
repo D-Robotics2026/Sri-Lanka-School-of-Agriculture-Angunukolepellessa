@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FIREBASE_DB_NAME } from '../firebase/config';
 import {
   Sprout,
   Lock,
@@ -12,8 +11,7 @@ import {
   GraduationCap,
   Sparkles,
   ShieldCheck,
-  CheckCircle2,
-  Database
+  CheckCircle2
 } from 'lucide-react';
 
 interface AuthPageProps {
@@ -41,7 +39,7 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
         setLoginError(res.error || 'Invalid credentials provided.');
       }
     } catch (err: any) {
-      setLoginError(err?.message || 'Authentication error. Please check your network and credentials.');
+      setLoginError(err?.message || 'Sign-in error. Please check your network and credentials.');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,11 +102,11 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
 
           <div className="relative z-10 pt-6 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
             <div className="flex items-center gap-1.5">
-              <Database size={13} className="text-emerald-400" />
-              <span>DB: {FIREBASE_DB_NAME}</span>
+              <Sparkles size={13} className="text-emerald-400" />
+              <span>Department of Agriculture Sri Lanka</span>
             </div>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50">
-              ACTIVE
+              ONLINE
             </span>
           </div>
         </div>
@@ -187,22 +185,17 @@ export const AuthPage: React.FC<AuthPageProps> = () => {
                 disabled={isSubmitting}
                 className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white rounded-xl text-xs font-bold transition shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <span>{isSubmitting ? 'Authenticating...' : 'Sign In to System'}</span>
+                <span>{isSubmitting ? 'Signing In...' : 'Sign In to System'}</span>
                 <ArrowRight size={14} />
               </button>
             </form>
           </div>
 
-          {/* Security & Firebase Database Indicator */}
-          <div className="mt-8 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
-              <span className="font-medium text-slate-600">
-                Firebase Authentication & Cloud Firestore
-              </span>
-            </div>
-            <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-              DB: {FIREBASE_DB_NAME}
+          {/* Institutional Protection Footer */}
+          <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-center gap-2 text-xs text-slate-400">
+            <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
+            <span className="font-medium text-slate-500">
+              Department of Agriculture — Official Academic System
             </span>
           </div>
         </div>

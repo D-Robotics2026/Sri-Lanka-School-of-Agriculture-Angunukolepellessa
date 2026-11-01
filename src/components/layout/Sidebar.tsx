@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { isTabAllowedForRole } from '../../types';
-import { FIREBASE_DB_NAME } from '../../firebase/config';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -22,8 +21,7 @@ import {
   Sprout,
   LogOut,
   KeyRound,
-  X,
-  Database
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -51,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setMobileOpen
 }) => {
   const { currentUser, logout, setMustChangePasswordOpen } = useAuth();
-  const { notifications, students, firestoreStatus } = useData();
+  const { notifications, students } = useData();
 
   if (!currentUser) return null;
 
@@ -253,48 +251,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* Cloud Sync Status & User Profile Footer - Locked at bottom */}
-      <div className="shrink-0 p-3 border-t border-slate-800/80 bg-slate-950 space-y-2.5">
-        {/* Real-time Firebase Sync Pill & Database Name */}
-        {!collapsed ? (
-          <div className="px-2.5 py-2 bg-slate-900/90 rounded-xl border border-slate-800 space-y-1.5 text-[10px]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-slate-300 font-medium">
-                <Database size={12} className="text-emerald-400 shrink-0" />
-                <span>Cloud Firestore</span>
-              </div>
-              <span
-                className={`px-1.5 py-0.5 rounded-md font-mono text-[9px] font-bold ${
-                  firestoreStatus === 'connected'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                }`}
-              >
-                {firestoreStatus === 'connected' ? 'ONLINE SYNC' : 'ACTIVE'}
-              </span>
-            </div>
-            <div
-              className="font-mono text-[9.5px] text-slate-400 bg-slate-950/70 px-2 py-1 rounded-md border border-slate-800/80 flex items-center justify-between"
-              title={`Connected Firebase Database: ${FIREBASE_DB_NAME}`}
-            >
-              <span className="text-slate-500">DB:</span>
-              <span className="text-emerald-400 font-semibold truncate ml-1">{FIREBASE_DB_NAME}</span>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col items-center gap-1"
-            title={`Firebase Database: ${FIREBASE_DB_NAME} (${firestoreStatus})`}
-          >
-            <Database size={14} className="text-emerald-400" />
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                firestoreStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
-              }`}
-            />
-          </div>
-        )}
-
+      {/* User Profile Footer - Locked at bottom */}
+      <div className="shrink-0 p-3 border-t border-slate-800/80 bg-slate-950">
         {!collapsed ? (
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">

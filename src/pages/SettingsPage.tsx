@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { SystemUser, UserRole } from '../types';
-import { FIREBASE_DB_NAME, FIREBASE_AUTH_DOMAIN } from '../firebase/config';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { formatDate } from '../utils/dateUtils';
@@ -150,7 +149,7 @@ export const SettingsPage: React.FC = () => {
           System Administration & Settings
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Library fine rates, academic attendance thresholds, authentication accounts, and database backup
+          Library fine rates, academic attendance thresholds, user accounts, and database backup
         </p>
       </div>
 
@@ -335,7 +334,7 @@ export const SettingsPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-200">
             <div>
-              <h3 className="text-sm font-bold text-slate-800">System Users & Authentication Registry</h3>
+              <h3 className="text-sm font-bold text-slate-800">System Users & Access Registry</h3>
               <p className="text-xs text-slate-500">Manage credentials and mandatory first-login password flags</p>
             </div>
             <button
@@ -408,43 +407,7 @@ export const SettingsPage: React.FC = () => {
 
       {/* Tab 3: Data Backup & Reset */}
       {activeTab === 'backup' && (
-        <div className="space-y-6">
-          {/* Cloud Database Connection Overview */}
-          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-6 border border-slate-800 shadow-md">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                  <Database size={13} />
-                  <span>Cloud Firestore & Firebase Auth</span>
-                  <span>•</span>
-                  <span>LIVE SYNCHRONIZATION</span>
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-white">Production Database Connection</h3>
-                <p className="text-xs text-slate-300">
-                  All academic batches, student directory, modules, attendance sessions, and user accounts sync directly with Google Cloud Firestore.
-                </p>
-              </div>
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 font-mono text-xs space-y-1.5 self-start md:self-auto min-w-[280px]">
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span>Database / Project:</span>
-                  <span className="text-emerald-400 font-bold">{FIREBASE_DB_NAME}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span>Auth Domain:</span>
-                  <span className="text-slate-300">{FIREBASE_AUTH_DOMAIN}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span>Cloud Status:</span>
-                  <span className="text-emerald-400 font-bold flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    Connected
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Export Backup */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
             <div>
@@ -502,7 +465,6 @@ export const SettingsPage: React.FC = () => {
               <span>Reset Factory Seed State</span>
             </button>
           </div>
-        </div>
         </div>
       )}
 
