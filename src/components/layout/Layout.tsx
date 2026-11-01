@@ -18,11 +18,26 @@ export const Layout: React.FC<LayoutProps> = ({
   setCurrentTab
 }) => {
   const { currentUser } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('soa_sidebar_collapsed');
+      if (saved !== null) return JSON.parse(saved);
+      // Auto-collapse on tablet screens (768px - 1023px) to maximize content room
+      return window.innerWidth < 1024 && window.innerWidth >= 768;
+    }
+    return false;
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const handleSetCollapsed = (val: boolean) => {
+    setCollapsed(val);
+    try {
+      localStorage.setItem('soa_sidebar_collapsed', JSON.stringify(val));
+    } catch {}
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans">
+    <div className="min-h-screen bg-slate-50 flex font-sans overflow-x-hidden">
       {/* Sleek Mobile Header (Only visible on small viewports) */}
       <header className="md:hidden fixed top-0 inset-x-0 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 flex items-center justify-between z-30 shadow-xs no-print">
         <div className="flex items-center gap-2.5">
@@ -63,16 +78,16 @@ export const Layout: React.FC<LayoutProps> = ({
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         collapsed={collapsed}
-        setCollapsed={setCollapsed}
+        setCollapsed={handleSetCollapsed}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
       />
 
-      {/* Main Content Area with Page Switch Animation */}
+      {/* Main Content Area with Page Switch Animation & Non-Clipping Flexbox Width */}
       <main
-        className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-all pb-24 md:pb-8 pt-16 md:pt-6"
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 transition-all pb-24 md:pb-8 pt-16 md:pt-6"
       >
-        <div key={currentTab} className="max-w-7xl mx-auto animate-fade-up">
+        <div key={currentTab} className="max-w-7xl mx-auto w-full animate-fade-up">
           {children}
         </div>
       </main>

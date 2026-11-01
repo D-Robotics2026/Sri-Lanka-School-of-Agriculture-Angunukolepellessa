@@ -257,7 +257,7 @@ export const LibraryPage: React.FC = () => {
 
       {/* Tabs & Search */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto">
           <button
             onClick={() => setActiveTab('inventory')}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 ${

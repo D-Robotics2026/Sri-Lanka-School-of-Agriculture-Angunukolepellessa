@@ -316,7 +316,7 @@ export const HostelMealsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="text-xs">
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Select Active Week</span>
               <select
@@ -335,7 +335,7 @@ export const HostelMealsPage: React.FC = () => {
             {(currentUser?.role === 'hostel_warden' || currentUser?.role === 'super_admin') && (
               <button
                 onClick={() => handleToggleWeekStatus(selectedWeek)}
-                className={`px-3 py-2 rounded-xl text-xs font-bold transition border ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition border shrink-0 ${
                   selectedWeek.status === 'open'
                     ? 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
                     : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
@@ -349,7 +349,7 @@ export const HostelMealsPage: React.FC = () => {
       )}
 
       {/* Tabs Switcher */}
-      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit no-print">
+      <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto no-print">
         <button
           onClick={() => setActiveTab('matrix')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${

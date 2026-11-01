@@ -37,7 +37,6 @@ interface SidebarProps {
 interface NavItem {
   id: string;
   label: string;
-  subLabel: string;
   icon: React.ElementType;
   roles?: string[];
 }
@@ -69,95 +68,82 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return isTargeted && !n.readByUserIds.includes(currentUser.id);
   }).length;
 
-  // Rich, descriptive titles & sub-labels with more words as requested
+  // Clean, single-line navigation items without sub-descriptions
   const navItems: NavItem[] = [
     {
       id: 'dashboard',
-      label: 'Dashboard Overview',
-      subLabel: 'KPIs & Status Summary',
+      label: 'Dashboard',
       icon: LayoutDashboard
     },
     {
       id: 'academics',
       label: 'Academic Batches',
-      subLabel: 'NVQ 5 & 6 Year Batches',
       icon: CalendarDays,
       roles: ['super_admin', 'admin', 'registrar']
     },
     {
       id: 'students',
       label: 'Student Directory',
-      subLabel: 'Profiles & Barcode IDs',
       icon: GraduationCap,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'hostel_warden']
     },
     {
       id: 'lecturers',
-      label: 'Academic Lecturers',
-      subLabel: 'Faculty & Department Staff',
+      label: 'Academic Staff',
       icon: Users,
       roles: ['super_admin', 'admin']
     },
     {
       id: 'modules',
-      label: 'Modules & Syllabus',
-      subLabel: 'Theory & Practical Units',
+      label: 'Course Modules',
       icon: BookOpenCheck,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'student']
     },
     {
       id: 'attendance',
       label: 'Attendance Tracking',
-      subLabel: 'Class Hours & 80% Rule',
       icon: CheckSquare,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'student']
     },
     {
       id: 'assessments',
-      label: 'Assignments & Tests',
-      subLabel: 'Assessments & Grading',
+      label: 'Assessments & Tests',
       icon: FileSpreadsheet,
       roles: ['super_admin', 'admin', 'lecturer', 'student']
     },
     {
       id: 'ojt',
       label: '6-Month OJT Tracker',
-      subLabel: 'Industrial Placements',
       icon: Briefcase,
       roles: ['super_admin', 'admin', 'registrar', 'student']
     },
     {
       id: 'library',
-      label: 'Library & Book Desk',
-      subLabel: 'Inventory & Fine Returns',
+      label: 'Library Management',
       icon: Library,
       roles: ['super_admin', 'admin', 'librarian', 'student']
     },
     {
       id: 'hostel',
       label: 'Hostel & 7×3 Meals',
-      subLabel: 'Weekly Catering Matrix',
       icon: UtensilsCrossed,
       roles: ['super_admin', 'admin', 'hostel_warden', 'student']
     },
     {
       id: 'reports',
       label: 'Progress Reports',
-      subLabel: 'Official Coverage Sheets',
       icon: BarChart3,
       roles: ['super_admin', 'admin', 'registrar']
     },
     {
       id: 'notifications',
-      label: 'Notices & Broadcasts',
-      subLabel: 'Announcements & Alerts',
+      label: 'Notice Board',
       icon: Bell,
       roles: ['super_admin', 'admin', 'registrar', 'lecturer', 'librarian', 'hostel_warden', 'student']
     },
     {
       id: 'settings',
       label: 'System Settings',
-      subLabel: 'Firebase & Parameters',
       icon: Settings,
       roles: ['super_admin', 'admin']
     }
@@ -201,10 +187,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Desktop Collapse / Expand Button */}
+        {/* Desktop & Tablet Collapse / Expand Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition ml-1"
+          className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition ml-1"
           title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -220,8 +206,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Navigation Links with Descriptive Words */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
+      {/* Navigation Links - Clean Single-Line Items Without Description */}
+      <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-1">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -231,33 +217,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleSelect(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-150 group relative text-xs ${
                 isActive
-                  ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900/90'
+                  ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900 font-medium'
               } ${collapsed ? 'justify-center' : ''}`}
-              title={collapsed ? `${item.label} • ${item.subLabel}` : undefined}
+              title={collapsed ? item.label : undefined}
             >
               <Icon
-                size={19}
+                size={18}
                 className={`shrink-0 transition-transform ${
                   isActive
-                    ? 'text-white scale-105'
-                    : 'text-slate-400 group-hover:text-emerald-400 group-hover:scale-110'
+                    ? 'text-white'
+                    : 'text-slate-400 group-hover:text-emerald-400'
                 }`}
               />
 
               {!collapsed && (
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="text-xs font-bold leading-tight truncate">{item.label}</div>
-                  <div
-                    className={`text-[10px] leading-tight truncate mt-0.5 ${
-                      isActive ? 'text-emerald-100 font-medium' : 'text-slate-500 group-hover:text-slate-400'
-                    }`}
-                  >
-                    {item.subLabel}
-                  </div>
-                </div>
+                <span className="flex-1 text-left truncate tracking-tight">
+                  {item.label}
+                </span>
               )}
 
               {/* Notice unread count badge */}
@@ -358,10 +337,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Desktop & Tablet Sidebar */}
       <aside
         className={`hidden md:block shrink-0 transition-all duration-300 no-print z-20 ${
-          collapsed ? 'w-20' : 'w-72'
+          collapsed ? 'w-20' : 'w-64'
         }`}
       >
         <div className="sticky top-0 h-screen border-r border-slate-800/80">
@@ -376,7 +355,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-slate-950 z-50 shadow-2xl animate-slide-left">
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-50 shadow-2xl animate-slide-left">
             {sidebarContent}
           </div>
         </div>

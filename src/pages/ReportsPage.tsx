@@ -147,7 +147,7 @@ export const ReportsPage: React.FC = () => {
 
       {/* Filter / Period Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs no-print">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="text-xs">
             <span className="text-slate-400 block text-[10px] uppercase font-bold">Reporting Month</span>
             <select
