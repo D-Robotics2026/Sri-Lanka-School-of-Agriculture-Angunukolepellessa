@@ -6,6 +6,7 @@ import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { BulkActionBar } from '../components/common/BulkActionBar';
 import { BulkImportModal } from '../components/common/BulkImportModal';
+import { ImageUpload } from '../components/common/ImageUpload';
 import { StatCard } from '../components/common/StatCard';
 import { formatDate } from '../utils/dateUtils';
 import {
@@ -63,7 +64,8 @@ export const LibraryPage: React.FC = () => {
     publicationYear: 2022,
     totalCopies: 5,
     availableCopies: 5,
-    shelfLocation: 'Shelf AGR-01-A'
+    shelfLocation: 'Shelf AGR-01-A',
+    coverUrl: ''
   });
 
   // Issue Book Modal
@@ -103,7 +105,8 @@ export const LibraryPage: React.FC = () => {
       publicationYear: 2023,
       totalCopies: 5,
       availableCopies: 5,
-      shelfLocation: 'Shelf AGR-02-B'
+      shelfLocation: 'Shelf AGR-02-B',
+      coverUrl: ''
     });
     setIsBookModalOpen(true);
   };
@@ -118,7 +121,8 @@ export const LibraryPage: React.FC = () => {
       publicationYear: b.publicationYear,
       totalCopies: b.totalCopies,
       availableCopies: b.availableCopies,
-      shelfLocation: b.shelfLocation
+      shelfLocation: b.shelfLocation,
+      coverUrl: b.coverUrl || ''
     });
     setIsBookModalOpen(true);
   };
@@ -434,9 +438,24 @@ export const LibraryPage: React.FC = () => {
                 {filteredBooks.map((b) => (
                   <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900">{b.title}</div>
-                      <div className="text-[11px] text-slate-400">
-                        {b.author} ({b.publicationYear})
+                      <div className="flex items-center gap-3">
+                        {b.coverUrl ? (
+                          <img
+                            src={b.coverUrl}
+                            alt={b.title}
+                            className="w-9 h-12 object-cover rounded-md border border-slate-200 shadow-2xs shrink-0"
+                          />
+                        ) : (
+                          <div className="w-9 h-12 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                            <BookOpen size={16} />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-bold text-slate-900">{b.title}</div>
+                          <div className="text-[11px] text-slate-400">
+                            {b.author} ({b.publicationYear})
+                          </div>
+                        </div>
                       </div>
                     </td>
 
@@ -682,6 +701,14 @@ export const LibraryPage: React.FC = () => {
         subtitle="Department of Agriculture Central Library Repository"
       >
         <form onSubmit={handleSaveBook} className="space-y-4">
+          <ImageUpload
+            value={bookForm.coverUrl}
+            onChange={(url) => setBookForm({ ...bookForm, coverUrl: url })}
+            folder="books"
+            label="Book Cover Art (Max 1MB • Firebase Storage)"
+            shape="book"
+          />
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">ISBN Number</label>

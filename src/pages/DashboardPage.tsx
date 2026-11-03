@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { StatCard } from '../components/common/StatCard';
 import { Badge } from '../components/common/Badge';
 import { BarcodeDisplay } from '../components/common/BarcodeDisplay';
+import { Modal } from '../components/common/Modal';
+import { ImageUpload } from '../components/common/ImageUpload';
 import { formatDate, formatDateTime } from '../utils/dateUtils';
 import {
   Users,
@@ -36,7 +38,8 @@ import {
   Moon,
   Lock,
   Unlock,
-  KeyRound
+  KeyRound,
+  Camera
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -57,9 +60,10 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, updateUser } = useAuth();
   const {
     students,
+    updateStudent,
     lecturers,
     modules,
     attendanceSessions,
@@ -76,6 +80,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     settings,
     fineSettings
   } = useData();
+
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
 
   if (!currentUser) return null;
 
@@ -150,22 +156,80 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         {/* Welcome Header */}
         <div className="bg-gradient-to-r from-emerald-800 to-green-700 text-white rounded-3xl p-6 shadow-md relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-xs font-semibold mb-2">
-                <span>Personal Student Portal</span>
-                <span>•</span>
-                <span>{student.nvqLevel}</span>
+            <div className="flex items-center gap-4">
+              <div className="relative group shrink-0">
+                <img
+                  src={
+                    student.photoUrl ||
+                    currentUser.avatar ||
+                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
+                  }
+                  alt={student.fullName}
+                  className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white/50 shadow-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoModalOpen(true)}
+                  className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md border-2 border-white transition active:scale-90"
+                  title="Upload / Change Photo (Max 1MB)"
+                >
+                  <Camera size={13} />
+                </button>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black">{student.fullName}</h2>
-              <p className="text-emerald-100 text-xs sm:text-sm mt-1">
-                Index No: <span className="font-mono font-bold text-white">{student.indexNumber}</span> • NIC: {student.nic} • Semester {student.semester}
-              </p>
+
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-xs font-semibold mb-2">
+                  <span>Personal Student Portal</span>
+                  <span>•</span>
+                  <span>{student.nvqLevel}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black">{student.fullName}</h2>
+                <p className="text-emerald-100 text-xs sm:text-sm mt-1">
+                  Index No: <span className="font-mono font-bold text-white">{student.indexNumber}</span> • NIC: {student.nic} • Semester {student.semester}
+                </p>
+              </div>
             </div>
+
             <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/20 self-start md:self-auto">
               <BarcodeDisplay value={student.barcode} label="Official Student ID Barcode" height={36} />
             </div>
           </div>
         </div>
+
+        {/* Student Profile Photo Upload Modal */}
+        <Modal
+          isOpen={isPhotoModalOpen}
+          onClose={() => setIsPhotoModalOpen(false)}
+          title="Update Official Profile Photo"
+          subtitle="Department of Agriculture — Student Official Record"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <ImageUpload
+              value={student.photoUrl || currentUser.avatar}
+              onChange={(url) => {
+                if (student) {
+                  updateStudent({ ...student, photoUrl: url });
+                }
+                if (currentUser) {
+                  updateUser({ ...currentUser, avatar: url });
+                }
+              }}
+              folder="students"
+              label="Student Official Photograph (Max 1MB • Firebase Storage)"
+              shape="square"
+            />
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsPhotoModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs"
+              >
+                Save Photo
+              </button>
+            </div>
+          </div>
+        </Modal>
 
         {/* Limited Student KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

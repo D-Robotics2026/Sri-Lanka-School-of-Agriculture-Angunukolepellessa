@@ -38,3 +38,22 @@ export async function createFirebaseAuthAccount(
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Bulk provisions a list of system user accounts directly into Firebase Authentication.
+ */
+export async function syncAllUsersToFirebaseAuth(
+  users: { email?: string; username: string; passwordHash: string }[]
+): Promise<{ total: number; created: number }> {
+  let created = 0;
+  for (const u of users) {
+    const email =
+      u.email && u.email.includes("@")
+        ? u.email.trim().toLowerCase()
+        : `${u.username.toLowerCase().replace(/[^a-z0-9]/g, "")}@soa.doa.gov.lk`;
+    const password = u.passwordHash && u.passwordHash.length >= 6 ? u.passwordHash : "Admin@123";
+    const res = await createFirebaseAuthAccount(email, password);
+    if (res.success) created++;
+  }
+  return { total: users.length, created };
+}

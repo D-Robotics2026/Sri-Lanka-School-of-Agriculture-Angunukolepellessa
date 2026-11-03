@@ -6,6 +6,7 @@ import { Modal } from '../components/common/Modal';
 import { BarcodeDisplay } from '../components/common/BarcodeDisplay';
 import { BulkActionBar } from '../components/common/BulkActionBar';
 import { BulkImportModal } from '../components/common/BulkImportModal';
+import { ImageUpload } from '../components/common/ImageUpload';
 import { formatDate } from '../utils/dateUtils';
 import {
   GraduationCap,
@@ -550,6 +551,16 @@ export const StudentsPage: React.FC = () => {
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  handleOpenEdit(selectedStudent);
+                }}
+                className="px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl flex items-center gap-1.5 transition"
+              >
+                <Edit2 size={14} />
+                <span>Edit & Change Photo</span>
+              </button>
+              <button
                 onClick={() => window.print()}
                 className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-1.5 transition"
               >
@@ -576,6 +587,15 @@ export const StudentsPage: React.FC = () => {
         maxWidth="2xl"
       >
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Official Student Photograph Upload to Firebase Storage */}
+          <ImageUpload
+            value={form.photoUrl}
+            onChange={(url) => setForm({ ...form, photoUrl: url })}
+            folder="students"
+            label="Student Official Photograph (Max 1MB • Firebase Storage)"
+            shape="square"
+          />
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Index Number</label>

@@ -5,6 +5,7 @@ import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { BulkActionBar } from '../components/common/BulkActionBar';
 import { BulkImportModal } from '../components/common/BulkImportModal';
+import { ImageUpload } from '../components/common/ImageUpload';
 import {
   Users,
   Plus,
@@ -336,6 +337,14 @@ export const LecturersPage: React.FC = () => {
         maxWidth="lg"
       >
         <form onSubmit={handleSave} className="space-y-4">
+          <ImageUpload
+            value={form.photoUrl}
+            onChange={(url) => setForm({ ...form, photoUrl: url })}
+            folder="lecturers"
+            label="Staff Profile Picture (Max 1MB • Firebase Storage)"
+            shape="circle"
+          />
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Staff ID</label>

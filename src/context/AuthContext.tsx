@@ -10,6 +10,7 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import { auth, FIREBASE_DB_NAME } from '../firebase/config';
+import { syncAllUsersToFirebaseAuth, createFirebaseAuthAccount } from '../firebase/authService';
 
 export const BOOTSTRAP_SUPERADMIN: SystemUser = {
   id: 'user-superadmin',
@@ -78,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error('Failed to parse loggedInUser from localStorage', e);
     }
-    return BOOTSTRAP_SUPERADMIN;
+    return null;
   });
 
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -114,6 +115,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsub();
   }, []);
 
+  // Auto-provision system users to Firebase Authentication
+  useEffect(() => {
+    if (users.length > 0) {
+      syncAllUsersToFirebaseAuth(users).catch((err) => {
+        console.warn('Firebase Auth user sync notice:', err);
+      });
+    }
+  }, [users.length]);
+
   // Sync users to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
@@ -148,6 +158,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (!found) {
+      // Check if user account was created directly in Firebase Auth
+      try {
+        const cred = await signInWithEmailAndPassword(auth, cleanId, passwordInput);
+        if (cred.user) {
+          const userFromAuth: SystemUser = {
+            id: cred.user.uid,
+            username: cred.user.email?.split('@')[0] || 'user',
+            passwordHash: passwordInput,
+            role: 'student',
+            fullName: cred.user.displayName || cred.user.email?.split('@')[0] || 'Student User',
+            email: cred.user.email || cleanId,
+            phone: cred.user.phoneNumber || '',
+            mustChangePassword: false,
+            createdAt: new Date().toISOString()
+          };
+          saveFirestoreDoc('users', userFromAuth.id, userFromAuth);
+          setUsers((prev) => [userFromAuth, ...prev]);
+          setCurrentUser(userFromAuth);
+          return { success: true };
+        }
+      } catch (authDirectErr) {
+        // Continue to error return
+      }
+
       return {
         success: false,
         error: 'No registered user found matching this Username, ID, or Email.'
@@ -316,10 +350,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsers((prev) => [created, ...prev]);
     saveFirestoreDoc('users', created.id, created);
 
-    // Sync user to Firebase Authentication
+    // Sync user to Firebase Authentication safely without switching active session
     try {
-      const email = created.email || `${created.username}@soa.doa.gov.lk`;
-      await createUserWithEmailAndPassword(auth, email, created.passwordHash);
+      const email =
+        created.email && created.email.includes('@')
+          ? created.email
+          : `${created.username.toLowerCase().replace(/[^a-z0-9]/g, '')}@soa.doa.gov.lk`;
+      const pass = created.passwordHash && created.passwordHash.length >= 6 ? created.passwordHash : 'Admin@123';
+      await createFirebaseAuthAccount(email, pass);
     } catch (e) {
       console.warn('Firebase Auth user creation notice:', e);
     }

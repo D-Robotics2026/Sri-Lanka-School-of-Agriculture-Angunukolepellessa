@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { SystemUser, UserRole } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { ImageUpload } from '../components/common/ImageUpload';
 import { formatDate } from '../utils/dateUtils';
 import {
   Settings,
@@ -55,7 +56,8 @@ export const SettingsPage: React.FC = () => {
     role: 'lecturer' as UserRole,
     email: '',
     passwordHash: 'password123',
-    mustChangePassword: true
+    mustChangePassword: true,
+    avatar: ''
   });
 
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
@@ -92,7 +94,8 @@ export const SettingsPage: React.FC = () => {
       role: userForm.role,
       email: userForm.email,
       passwordHash: userForm.passwordHash,
-      mustChangePassword: userForm.mustChangePassword
+      mustChangePassword: userForm.mustChangePassword,
+      avatar: userForm.avatar || (userForm.role === 'student' ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80' : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80')
     });
     setIsUserModalOpen(false);
     setMsg({ text: `System user ${userForm.username} created successfully!` });
@@ -476,6 +479,14 @@ export const SettingsPage: React.FC = () => {
         subtitle="School of Agriculture Angunakolapelessa Access Control"
       >
         <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+          <ImageUpload
+            value={userForm.avatar}
+            onChange={(url) => setUserForm({ ...userForm, avatar: url })}
+            folder="users"
+            label="User Avatar Photo (Max 1MB • Firebase Storage)"
+            shape="circle"
+          />
+
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Username</label>
             <input
