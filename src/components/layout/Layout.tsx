@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { NotificationBell } from '../common/NotificationBell';
@@ -86,13 +87,22 @@ export const Layout: React.FC<LayoutProps> = ({
         setMobileOpen={setMobileOpen}
       />
 
-      {/* Main Content Area with Page Switch Animation & Non-Clipping Flexbox Width */}
+      {/* Main Content Area with Smooth Framer Motion Page Switch Animation & Mandatory pb-32 Padding */}
       <main
-        className="flex-1 h-full min-w-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 transition-all pb-28 md:pb-8 pt-20 md:pt-6"
+        className="flex-1 h-full min-w-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 transition-all pb-32 md:pb-8 pt-20 md:pt-6"
       >
-        <div key={currentTab} className="max-w-7xl mx-auto w-full animate-fade-up">
-          {children}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="max-w-7xl mx-auto w-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation for all users */}

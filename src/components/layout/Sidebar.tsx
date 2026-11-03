@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { isTabAllowedForRole } from '../../types';
@@ -330,18 +331,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </aside>
 
-      {/* Mobile Drawer with Backdrop */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden no-print">
-          <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-fade-in"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-50 shadow-2xl animate-slide-left h-full flex flex-col">
-            {sidebarContent}
+      {/* Mobile Drawer with Backdrop and Smooth Spring Slide */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 md:hidden no-print">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-50 shadow-2xl h-full flex flex-col"
+            >
+              {sidebarContent}
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 };

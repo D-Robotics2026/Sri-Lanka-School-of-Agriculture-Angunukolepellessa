@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
@@ -135,29 +136,29 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   return (
-    <nav className="md:hidden fixed bottom-3 inset-x-3 sm:inset-x-8 max-w-md mx-auto z-40 no-print animate-fade-up">
-      {/* Floating Pill Dock Capsule matching SynapGro design theme */}
-      <div className="relative bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.06)] px-2 py-1 flex items-center justify-between">
+    <nav className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-50 no-print animate-fade-up">
+      {/* Floating Pill Dock Capsule */}
+      <div className="relative bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)] px-3 py-2 flex items-center justify-between">
         
-        {/* Left 2 Action Items */}
-        <div className="flex-1 flex items-center justify-around">
+        {/* Left Action Items */}
+        <div className="flex-1 flex items-center justify-around pr-8">
           {left.map(renderTabButton)}
         </div>
 
-        {/* Center Floating Elevated Main Menu Button matching SynapGro */}
-        <div className="relative -top-4 px-1.5 flex flex-col items-center shrink-0">
-          <button
-            onClick={onOpenMenu}
-            className="w-13 h-13 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/35 ring-4 ring-white flex items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105"
-            title="Open Menu"
-          >
-            <Menu size={22} className="stroke-[2.5]" />
-          </button>
-          <span className="text-[10px] font-bold text-slate-700 tracking-tight mt-0.5">Menu</span>
-        </div>
+        {/* Center Floating Elevated Main Menu Button */}
+        <motion.button
+          whileHover={{ scale: 1.06, y: -2 }}
+          whileTap={{ scale: 0.92 }}
+          onClick={onOpenMenu}
+          className="absolute -top-5 left-1/2 -translate-x-1/2 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex flex-col items-center justify-center shadow-lg shadow-emerald-600/35 border-4 border-white transition-all cursor-pointer z-10"
+          title="Open Menu"
+        >
+          <Menu size={22} className="stroke-[2.5]" />
+          <span className="text-[9px] font-black uppercase tracking-tight -mt-0.5 leading-none">Menu</span>
+        </motion.button>
 
-        {/* Right 2 Action Items */}
-        <div className="flex-1 flex items-center justify-around">
+        {/* Right Action Items */}
+        <div className="flex-1 flex items-center justify-around pl-8">
           {right.map(renderTabButton)}
         </div>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -42,8 +43,6 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, onClose, preventBackdropClose]);
 
-  if (!isOpen) return null;
-
   const maxWidthStyles = {
     sm: 'max-w-sm',
     md: 'max-w-md',
@@ -54,42 +53,54 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   const modalContent = (
-    <div
-      className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 overflow-hidden animate-fade-in"
-      onClick={preventBackdropClose ? undefined : onClose}
-    >
-      <div
-        className={`relative w-full ${maxWidthStyles[maxWidth]} max-h-[92vh] sm:max-h-[88vh] flex flex-col bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all duration-200 animate-fade-up`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Mobile drag handle / touch pill */}
-        <div className="sm:hidden pt-2.5 pb-1 flex justify-center bg-slate-50/80">
-          <div className="w-12 h-1 bg-slate-300 rounded-full" />
-        </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 overflow-hidden"
+          onClick={preventBackdropClose ? undefined : onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 16 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className={`relative w-full ${maxWidthStyles[maxWidth]} max-h-[92vh] sm:max-h-[88vh] flex flex-col bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-100 overflow-hidden`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile drag handle / touch pill */}
+            <div className="sm:hidden pt-2.5 pb-1 flex justify-center bg-slate-50/80">
+              <div className="w-12 h-1 bg-slate-300 rounded-full" />
+            </div>
 
-        {/* Modal Header */}
-        <div className="shrink-0 flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/80">
-          <div className="min-w-0 pr-3">
-            <h3 className="text-base sm:text-lg font-bold text-slate-800 truncate">{title}</h3>
-            {subtitle && <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>}
-          </div>
-          {!preventBackdropClose && (
-            <button
-              onClick={onClose}
-              className="shrink-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
+            {/* Modal Header */}
+            <div className="shrink-0 flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/80">
+              <div className="min-w-0 pr-3">
+                <h3 className="text-base sm:text-lg font-bold text-slate-800 truncate">{title}</h3>
+                {subtitle && <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>}
+              </div>
+              {!preventBackdropClose && (
+                <button
+                  onClick={onClose}
+                  className="shrink-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
 
-        {/* Modal Scrollable Body */}
-        <div ref={bodyRef} className="flex-1 p-4 sm:p-6 overflow-y-auto overscroll-contain">
-          {children}
-        </div>
-      </div>
-    </div>
+            {/* Modal Scrollable Body */}
+            <div ref={bodyRef} className="flex-1 p-4 sm:p-6 overflow-y-auto overscroll-contain">
+              {children}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
   return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
