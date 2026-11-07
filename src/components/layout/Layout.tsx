@@ -110,6 +110,7 @@ export const Layout: React.FC<LayoutProps> = ({
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         onOpenMenu={() => setMobileOpen(true)}
+        hide={mobileOpen}
       />
 
       {/* Mandatory Password Change Enforcement Modal */}

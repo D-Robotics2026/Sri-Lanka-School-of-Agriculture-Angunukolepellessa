@@ -334,7 +334,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Drawer with Backdrop and Smooth Spring Slide */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed inset-0 z-50 md:hidden no-print">
+          <div className="fixed inset-0 z-[60] md:hidden no-print">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -348,7 +348,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-50 shadow-2xl h-full flex flex-col"
+              className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-950 z-[60] shadow-2xl h-full flex flex-col"
             >
               {sidebarContent}
             </motion.div>
