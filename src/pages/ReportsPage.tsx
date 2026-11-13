@@ -113,7 +113,12 @@ export const ReportsPage: React.FC = () => {
     });
   }, [students, attendanceSessions, settings]);
 
-  const filteredCoverage = moduleCoverage.filter((m) => selectedLevel === 'all' || m.nvqLevel === selectedLevel);
+  const filteredCoverage = moduleCoverage.filter(
+    (m) =>
+      selectedLevel === 'all' ||
+      m.nvqLevel === selectedLevel ||
+      m.nvqLevel === 'Level 5 & 6'
+  );
   const eligibleCount = studentEligibility.filter((s) => s.isEligible).length;
   const inEligibleCount = studentEligibility.filter((s) => !s.isEligible).length;
 

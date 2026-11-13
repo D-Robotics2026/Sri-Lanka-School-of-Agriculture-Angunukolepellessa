@@ -247,12 +247,13 @@ export const SEED_LECTURERS: Lecturer[] = [
 ];
 
 export const SEED_MODULES: Module[] = [
-  // NVQ Level 5 Modules
+  // --- YEAR 1 COMMON CURRICULUM (Conducted for both NVQ Level 5 and NVQ Level 6) ---
+  // Semester 1
   {
     id: 'mod-ag501',
-    code: 'EAT 501',
+    code: 'EAT/DAT 501',
     title: 'Agronomy of Field Crops & Paddy Cultivation',
-    nvqLevel: 'Level 5',
+    nvqLevel: 'Level 5 & 6',
     semester: 1,
     credits: 3.5,
     theoryHours: 30,
@@ -266,9 +267,9 @@ export const SEED_MODULES: Module[] = [
   },
   {
     id: 'mod-ag502',
-    code: 'EAT 502',
+    code: 'EAT/DAT 502',
     title: 'Soil Fertility & Organic Fertilizer Management',
-    nvqLevel: 'Level 5',
+    nvqLevel: 'Level 5 & 6',
     semester: 1,
     credits: 3.0,
     theoryHours: 30,
@@ -281,10 +282,28 @@ export const SEED_MODULES: Module[] = [
     }
   },
   {
+    id: 'mod-ag505',
+    code: 'EAT/DAT 505',
+    title: 'Principles of Horticulture & Crop Propagation',
+    nvqLevel: 'Level 5 & 6',
+    semester: 1,
+    credits: 3.0,
+    theoryHours: 30,
+    practicalHours: 45,
+    primaryLecturerId: 'lec-1',
+    assessmentCriteria: {
+      assignmentsCount: 2,
+      practicalTestsCount: 1,
+      fieldVisitsCount: 1
+    }
+  },
+
+  // Semester 2
+  {
     id: 'mod-ag503',
-    code: 'EAT 503',
+    code: 'EAT/DAT 503',
     title: 'Farm Machinery Operation & Maintenance',
-    nvqLevel: 'Level 5',
+    nvqLevel: 'Level 5 & 6',
     semester: 2,
     credits: 3.5,
     theoryHours: 25,
@@ -298,9 +317,9 @@ export const SEED_MODULES: Module[] = [
   },
   {
     id: 'mod-ag504',
-    code: 'EAT 504',
+    code: 'EAT/DAT 504',
     title: 'Plant Protection, Pest & Weed Management',
-    nvqLevel: 'Level 5',
+    nvqLevel: 'Level 5 & 6',
     semester: 2,
     credits: 3.0,
     theoryHours: 30,
@@ -312,7 +331,25 @@ export const SEED_MODULES: Module[] = [
       fieldVisitsCount: 1
     }
   },
-  // NVQ Level 6 Modules
+  {
+    id: 'mod-ag506',
+    code: 'EAT/DAT 506',
+    title: 'Agricultural Economics & Farm Business Records',
+    nvqLevel: 'Level 5 & 6',
+    semester: 2,
+    credits: 3.0,
+    theoryHours: 30,
+    practicalHours: 45,
+    primaryLecturerId: 'lec-4',
+    assessmentCriteria: {
+      assignmentsCount: 2,
+      practicalTestsCount: 1,
+      fieldVisitsCount: 1
+    }
+  },
+
+  // --- YEAR 2 ADVANCED DIPLOMA CURRICULUM (NVQ Level 6 Only) ---
+  // Semester 3
   {
     id: 'mod-ag601',
     code: 'DAT 601',
@@ -346,6 +383,24 @@ export const SEED_MODULES: Module[] = [
     }
   },
   {
+    id: 'mod-ag603',
+    code: 'DAT 603',
+    title: 'Advanced Crop Breeding & Commercial Seed Production',
+    nvqLevel: 'Level 6',
+    semester: 3,
+    credits: 3.5,
+    theoryHours: 30,
+    practicalHours: 50,
+    primaryLecturerId: 'lec-3',
+    assessmentCriteria: {
+      assignmentsCount: 2,
+      practicalTestsCount: 2,
+      fieldVisitsCount: 1
+    }
+  },
+
+  // Semester 4
+  {
     id: 'mod-ag604',
     code: 'DAT 604',
     title: 'Micro-Irrigation & Water Resource Management',
@@ -358,6 +413,38 @@ export const SEED_MODULES: Module[] = [
     assessmentCriteria: {
       assignmentsCount: 2,
       practicalTestsCount: 2,
+      fieldVisitsCount: 1
+    }
+  },
+  {
+    id: 'mod-ag605',
+    code: 'DAT 605',
+    title: 'Commercial Farm Automation & Smart Agri-Sensors',
+    nvqLevel: 'Level 6',
+    semester: 4,
+    credits: 3.5,
+    theoryHours: 30,
+    practicalHours: 50,
+    primaryLecturerId: 'lec-2',
+    assessmentCriteria: {
+      assignmentsCount: 2,
+      practicalTestsCount: 2,
+      fieldVisitsCount: 1
+    }
+  },
+  {
+    id: 'mod-ag606',
+    code: 'DAT 606',
+    title: 'Agribusiness Management, Marketing & Export Standards',
+    nvqLevel: 'Level 6',
+    semester: 4,
+    credits: 3.0,
+    theoryHours: 30,
+    practicalHours: 45,
+    primaryLecturerId: 'lec-4',
+    assessmentCriteria: {
+      assignmentsCount: 2,
+      practicalTestsCount: 1,
       fieldVisitsCount: 1
     }
   }

@@ -27,6 +27,7 @@ import {
   deleteFirestoreDoc
 } from '../firebase/syncService';
 import { createFirebaseAuthAccount } from '../firebase/authService';
+import { SEED_MODULES } from '../data/seedData';
 
 export const DEFAULT_FINE_SETTINGS: FineSettings = {
   dailyRateLkr: 10,
@@ -176,6 +177,7 @@ interface DataContextType {
   updateSettings: (settings: SystemSettings) => void;
   clearAllSampleData: () => void;
   resetToDefaultSeed: () => void;
+  resetModulesToSOACurriculum: () => Promise<void>;
   syncAllDataToFirestore: () => Promise<void>;
   exportBackupJson: () => string;
   importBackupJson: (jsonData: string) => { success: boolean; error?: string };
@@ -931,6 +933,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveFirestoreDoc('settings', 'systemSettings', newSettings);
   };
 
+  // Reset modules specifically to Department of Agriculture SOA Curriculum
+  const resetModulesToSOACurriculum = async () => {
+    setModules(SEED_MODULES);
+    for (const m of SEED_MODULES) {
+      await saveFirestoreDoc('modules', m.id, m);
+    }
+  };
+
   // Clear all sample mock data cleanly
   const clearAllSampleData = () => {
     setAcademicYears([]);
@@ -1114,6 +1124,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateSettings,
         clearAllSampleData,
         resetToDefaultSeed: clearAllSampleData,
+        resetModulesToSOACurriculum,
         syncAllDataToFirestore,
         exportBackupJson,
         importBackupJson

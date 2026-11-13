@@ -140,41 +140,43 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <AnimatePresence>
       {!hide && (
-        <motion.nav
-          initial={{ y: 80, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 80, opacity: 0 }}
-          transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-          className="md:hidden fixed bottom-4 inset-x-0 mx-auto w-[92%] max-w-md z-40 pointer-events-none no-print"
-        >
-          {/* Floating Pill Dock Capsule */}
-          <div className="relative w-full bg-white/95 backdrop-blur-md border border-gray-100 rounded-full shadow-lg px-2 py-1.5 flex items-center justify-between pointer-events-auto">
-            
-            {/* Left Action Items */}
-            <div className="flex-1 flex items-center justify-around pr-2">
-              {left.map(renderTabButton)}
+        <div className="md:hidden fixed bottom-4 inset-x-0 flex justify-center z-40 pointer-events-none no-print px-4">
+          <motion.nav
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+            className="w-full max-w-md pointer-events-auto"
+          >
+            {/* Floating Pill Dock Capsule */}
+            <div className="relative w-full bg-white/95 backdrop-blur-md border border-gray-100 rounded-full shadow-lg px-2 py-1.5 flex items-center justify-between">
+              
+              {/* Left Action Items */}
+              <div className="flex-1 flex items-center justify-around pr-2">
+                {left.map(renderTabButton)}
+              </div>
+
+              {/* Center Spacer slot for floating button */}
+              <div className="w-14 shrink-0 pointer-events-none" />
+
+              {/* Center Floating Action Button ("Menu") */}
+              <button
+                onClick={onOpenMenu}
+                className="absolute -top-5 left-1/2 -translate-x-1/2 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex flex-col items-center justify-center shadow-lg border-4 border-white transition-transform active:scale-95 cursor-pointer z-10"
+                title="Menu"
+              >
+                <Menu size={22} className="stroke-[2.5]" />
+                <span className="text-[9px] font-black uppercase tracking-tight -mt-0.5 leading-none">Menu</span>
+              </button>
+
+              {/* Right Action Items */}
+              <div className="flex-1 flex items-center justify-around pl-2">
+                {right.map(renderTabButton)}
+              </div>
+
             </div>
-
-            {/* Center Spacer slot for floating button */}
-            <div className="w-14 shrink-0 pointer-events-none" />
-
-            {/* Center Floating Action Button ("Menu") */}
-            <button
-              onClick={onOpenMenu}
-              className="absolute -top-5 left-1/2 -translate-x-1/2 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex flex-col items-center justify-center shadow-lg border-4 border-white transition-transform active:scale-95 cursor-pointer z-10"
-              title="Menu"
-            >
-              <Menu size={22} className="stroke-[2.5]" />
-              <span className="text-[9px] font-black uppercase tracking-tight -mt-0.5 leading-none">Menu</span>
-            </button>
-
-            {/* Right Action Items */}
-            <div className="flex-1 flex items-center justify-around pl-2">
-              {right.map(renderTabButton)}
-            </div>
-
-          </div>
-        </motion.nav>
+          </motion.nav>
+        </div>
       )}
     </AnimatePresence>
   );

@@ -49,14 +49,14 @@ export const LecturersPage: React.FC = () => {
   const handleOpenAdd = () => {
     setEditingLecturer(null);
     setForm({
-      lecturerId: `LEC-AG-00${lecturers.length + 1}`,
+      lecturerId: '',
       fullName: '',
-      designation: 'Senior Agricultural Instructor',
-      department: 'Crop Science & Agronomy',
+      designation: '',
+      department: '',
       email: '',
-      phone: '+94 77 123 4567',
-      qualifications: 'B.Sc. (Agric) Sri Lanka',
-      photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80',
+      phone: '',
+      qualifications: '',
+      photoUrl: '',
       assignedModuleIds: []
     });
     setIsModalOpen(true);
@@ -80,13 +80,17 @@ export const LecturersPage: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    const lecturerPayload = {
+      ...form,
+      department: form.department || 'Academic Staff'
+    };
     if (editingLecturer) {
       updateLecturer({
         ...editingLecturer,
-        ...form
+        ...lecturerPayload
       });
     } else {
-      addLecturer(form);
+      addLecturer(lecturerPayload);
     }
     setIsModalOpen(false);
   };
@@ -165,11 +169,8 @@ export const LecturersPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-            Academic Faculty & Lecturers
+            Academic Staff
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Department of Agriculture instructors, senior lecturers, and module coordinators
-          </p>
         </div>
 
         <button
@@ -333,7 +334,6 @@ export const LecturersPage: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingLecturer ? 'Edit Lecturer Profile' : 'Add New Lecturer'}
-        subtitle="Department of Agriculture Faculty Register"
         maxWidth="lg"
       >
         <form onSubmit={handleSave} className="space-y-4">
@@ -345,28 +345,16 @@ export const LecturersPage: React.FC = () => {
             shape="circle"
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Staff ID</label>
-              <input
-                type="text"
-                required
-                value={form.lecturerId}
-                onChange={(e) => setForm({ ...form, lecturerId: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-mono font-bold"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Department</label>
-              <input
-                type="text"
-                required
-                value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
-                placeholder="e.g. Crop Science & Agronomy"
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Staff ID</label>
+            <input
+              type="text"
+              required
+              value={form.lecturerId}
+              onChange={(e) => setForm({ ...form, lecturerId: e.target.value })}
+              placeholder="e.g. LEC-AG-001"
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-mono font-bold"
+            />
           </div>
 
           <div>

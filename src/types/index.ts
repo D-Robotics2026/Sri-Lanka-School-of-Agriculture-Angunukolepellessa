@@ -25,7 +25,7 @@ export interface SystemUser {
   lastLogin?: string;
 }
 
-export type NVQLevel = 'Level 5' | 'Level 6';
+export type NVQLevel = 'Level 5' | 'Level 6' | 'Level 5 & 6';
 export type AcademicYearStatus = 'upcoming' | 'active' | 'completed';
 export type EnrollmentStatus = 'active' | 'suspended' | 'graduated' | 'dropped_out' | 'ojt';
 

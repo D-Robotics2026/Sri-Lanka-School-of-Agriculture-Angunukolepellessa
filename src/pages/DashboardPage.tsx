@@ -259,7 +259,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           />
           <StatCard
             title="Enrolled Modules"
-            value={modules.filter((m) => m.nvqLevel === student.nvqLevel).length}
+            value={modules.filter((m) => m.nvqLevel === student.nvqLevel || m.nvqLevel === 'Level 5 & 6').length}
             subtitle={student.nvqLevel === 'Level 5' ? '1-Year Curriculum' : '2-Year Curriculum'}
             icon={GraduationCap}
             color="indigo"

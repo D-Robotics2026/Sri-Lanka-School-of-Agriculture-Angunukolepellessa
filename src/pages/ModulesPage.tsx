@@ -17,15 +17,17 @@ import {
   Trash2,
   UserCheck,
   ClipboardList,
-  Upload
+  Upload,
+  RotateCcw
 } from 'lucide-react';
 
 export const ModulesPage: React.FC = () => {
-  const { modules, addModule, updateModule, deleteModule, lecturers } = useData();
+  const { modules, addModule, updateModule, deleteModule, lecturers, resetModulesToSOACurriculum } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState<'all' | NVQLevel>('all');
   const [semesterFilter, setSemesterFilter] = useState<'all' | number>('all');
+  const [resetting, setResetting] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,7 +38,7 @@ export const ModulesPage: React.FC = () => {
   const [form, setForm] = useState({
     code: '',
     title: '',
-    nvqLevel: 'Level 5' as NVQLevel,
+    nvqLevel: 'Level 5 & 6' as NVQLevel,
     semester: 1,
     credits: 3.0,
     theoryHours: 30,
@@ -50,9 +52,9 @@ export const ModulesPage: React.FC = () => {
   const handleOpenAdd = () => {
     setEditingModule(null);
     setForm({
-      code: 'AG-50' + (modules.length + 1),
+      code: 'EAT/DAT 50' + (modules.length + 1),
       title: '',
-      nvqLevel: 'Level 5',
+      nvqLevel: 'Level 5 & 6',
       semester: 1,
       credits: 3.0,
       theoryHours: 30,
@@ -112,11 +114,33 @@ export const ModulesPage: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  const handleResetToSOACurriculum = async () => {
+    if (
+      confirm(
+        'Load the official Department of Agriculture SOA Angunakolapelessa standard curriculum?\n\n' +
+        '• Year 1 (Shared NVQ 5 & NVQ 6): EAT/DAT 501 - 506 (Semesters 1 & 2)\n' +
+        '• Year 2 (NVQ 6 Advanced): DAT 601 - 606 (Semesters 3 & 4)'
+      )
+    ) {
+      setResetting(true);
+      try {
+        await resetModulesToSOACurriculum();
+      } catch (err) {
+        console.error('Failed to reset curriculum:', err);
+      } finally {
+        setResetting(false);
+      }
+    }
+  };
+
   const filteredModules = modules.filter((m) => {
     const matchesSearch =
       m.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFilter === 'all' || m.nvqLevel === levelFilter;
+    const matchesLevel =
+      levelFilter === 'all' ||
+      m.nvqLevel === levelFilter ||
+      m.nvqLevel === 'Level 5 & 6';
     const matchesSem = semesterFilter === 'all' || m.semester === semesterFilter;
     return matchesSearch && matchesLevel && matchesSem;
   });
@@ -169,9 +193,13 @@ export const ModulesPage: React.FC = () => {
 
   const handleBulkImportModules = async (rows: any[]) => {
     for (const r of rows) {
-      const nvq: NVQLevel = r.nvqLevel === 'Level 6' ? 'Level 6' : 'Level 5';
+      const rawLevel = (r.nvqLevel || '').toLowerCase();
+      let nvq: NVQLevel = 'Level 5';
+      if (rawLevel.includes('5') && rawLevel.includes('6')) nvq = 'Level 5 & 6';
+      else if (rawLevel.includes('6')) nvq = 'Level 6';
+
       addModule({
-        code: r.code || `AG-50${Math.floor(10 + Math.random() * 90)}`,
+        code: r.code || `EAT/DAT 50${Math.floor(10 + Math.random() * 90)}`,
         title: r.title || 'Course Module',
         nvqLevel: nvq,
         semester: r.semester ? parseInt(r.semester, 10) || 1 : 1,
@@ -201,7 +229,16 @@ export const ModulesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={handleResetToSOACurriculum}
+            disabled={resetting}
+            className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+            title="Load Department of Agriculture official curriculum for NVQ 5 & NVQ 6"
+          >
+            <RotateCcw size={15} className={resetting ? 'animate-spin' : ''} />
+            <span>Reset to SOA Curriculum</span>
+          </button>
           <button
             onClick={() => setIsImportModalOpen(true)}
             className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
@@ -241,6 +278,7 @@ export const ModulesPage: React.FC = () => {
             <option value="all">All NVQ Levels</option>
             <option value="Level 5">NVQ Level 5</option>
             <option value="Level 6">NVQ Level 6</option>
+            <option value="Level 5 & 6">NVQ Level 5 & 6 (Shared Year 1)</option>
           </select>
 
           <select
@@ -285,7 +323,17 @@ export const ModulesPage: React.FC = () => {
                     {mod.code}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <Badge variant={mod.nvqLevel === 'Level 5' ? 'green' : 'blue'}>{mod.nvqLevel}</Badge>
+                    <Badge
+                      variant={
+                        mod.nvqLevel === 'Level 5 & 6'
+                          ? 'purple'
+                          : mod.nvqLevel === 'Level 5'
+                          ? 'green'
+                          : 'blue'
+                      }
+                    >
+                      {mod.nvqLevel === 'Level 5 & 6' ? 'Level 5 & 6 (Shared)' : mod.nvqLevel}
+                    </Badge>
                     <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
                       Sem {mod.semester}
                     </span>
@@ -384,8 +432,9 @@ export const ModulesPage: React.FC = () => {
                 onChange={(e) => setForm({ ...form, nvqLevel: e.target.value as NVQLevel })}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500 font-medium"
               >
-                <option value="Level 5">NVQ Level 5</option>
-                <option value="Level 6">NVQ Level 6</option>
+                <option value="Level 5 & 6">NVQ Level 5 & 6 (Shared Year 1)</option>
+                <option value="Level 5">NVQ Level 5 Only</option>
+                <option value="Level 6">NVQ Level 6 (Year 2 Advanced)</option>
               </select>
             </div>
           </div>
