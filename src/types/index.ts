@@ -78,6 +78,7 @@ export interface Student {
   photoUrl: string;
   enrollmentStatus: EnrollmentStatus;
   isHostelResident: boolean;
+  hostelName?: string;
   hostelRoomNumber?: string;
   enrollmentDate: string;
 }

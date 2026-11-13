@@ -72,7 +72,8 @@ export const StudentsPage: React.FC = () => {
     academicYearId: '',
     photoUrl: '',
     enrollmentStatus: 'active' as EnrollmentStatus,
-    isHostelResident: true,
+    isHostelResident: false,
+    hostelName: '',
     hostelRoomNumber: '',
     enrollmentDate: new Date().toISOString().split('T')[0]
   });
@@ -102,6 +103,7 @@ export const StudentsPage: React.FC = () => {
       photoUrl: '',
       enrollmentStatus: 'active',
       isHostelResident: false,
+      hostelName: '',
       hostelRoomNumber: '',
       enrollmentDate: new Date().toISOString().split('T')[0]
     });
@@ -133,6 +135,7 @@ export const StudentsPage: React.FC = () => {
       photoUrl: student.photoUrl,
       enrollmentStatus: student.enrollmentStatus,
       isHostelResident: student.isHostelResident,
+      hostelName: student.hostelName || '',
       hostelRoomNumber: student.hostelRoomNumber || '',
       enrollmentDate: student.enrollmentDate
     });
@@ -166,7 +169,8 @@ export const StudentsPage: React.FC = () => {
       photoUrl: form.photoUrl,
       enrollmentStatus: form.enrollmentStatus,
       isHostelResident: form.isHostelResident,
-      hostelRoomNumber: form.hostelRoomNumber,
+      hostelName: form.isHostelResident ? form.hostelName : '',
+      hostelRoomNumber: form.isHostelResident ? form.hostelRoomNumber : '',
       enrollmentDate: form.enrollmentDate
     };
 
@@ -227,7 +231,8 @@ export const StudentsPage: React.FC = () => {
     { key: 'parentName', label: 'Guardian Name' },
     { key: 'parentPhone', label: 'Guardian Phone' },
     { key: 'barcode', label: 'Barcode Number' },
-    { key: 'hostelRoomNumber', label: 'Hostel Room Number' }
+    { key: 'hostelName', label: 'Hostel Name / Building' },
+    { key: 'hostelRoomNumber', label: 'Hostel Room No' }
   ];
 
   const studentSampleData = [
@@ -245,6 +250,7 @@ export const StudentsPage: React.FC = () => {
       parentName: 'S. Senanayake',
       parentPhone: '+94 71 987 6543',
       barcode: '884012024001',
+      hostelName: "Boys' Hostel",
       hostelRoomNumber: 'A-12'
     },
     {
@@ -261,6 +267,7 @@ export const StudentsPage: React.FC = () => {
       parentName: 'W. Wickramasinghe',
       parentPhone: '+94 70 876 5432',
       barcode: '884012024002',
+      hostelName: "Girls' Hostel",
       hostelRoomNumber: 'G-05'
     }
   ];
@@ -307,7 +314,8 @@ export const StudentsPage: React.FC = () => {
             ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=250&q=80'
             : 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=250&q=80',
         enrollmentStatus: 'active',
-        isHostelResident: Boolean(r.hostelRoomNumber),
+        isHostelResident: Boolean(r.hostelName || r.hostelRoomNumber),
+        hostelName: r.hostelName || '',
         hostelRoomNumber: r.hostelRoomNumber || '',
         enrollmentDate: new Date().toISOString().split('T')[0]
       });
@@ -491,7 +499,10 @@ export const StudentsPage: React.FC = () => {
                               <Home size={11} />
                               <span>Resident</span>
                             </span>
-                            <div className="text-[10px] text-slate-400 mt-0.5">{s.hostelRoomNumber}</div>
+                            <div className="text-[10px] text-slate-500 mt-0.5 font-medium truncate max-w-[140px]">
+                              {s.hostelName && <span>{s.hostelName} • </span>}
+                              {s.hostelRoomNumber ? `Room ${s.hostelRoomNumber}` : 'Room Unassigned'}
+                            </div>
                           </div>
                         ) : (
                           <span className="text-[11px] text-slate-400">Day Scholar</span>
@@ -657,9 +668,11 @@ export const StudentsPage: React.FC = () => {
                   <span className="font-medium text-slate-700">{selectedStudent.parent.occupation || 'N/A'}</span>
                 </p>
                 <p>
-                  <span className="text-slate-400">Hostel Resident:</span>{' '}
+                  <span className="text-slate-400">Hostel Residence:</span>{' '}
                   <span className="font-medium text-slate-700">
-                    {selectedStudent.isHostelResident ? `Yes (${selectedStudent.hostelRoomNumber})` : 'No (Day Scholar)'}
+                    {selectedStudent.isHostelResident
+                      ? `Yes — ${selectedStudent.hostelName || 'Hostel'} (${selectedStudent.hostelRoomNumber ? `Room ${selectedStudent.hostelRoomNumber}` : 'Room Unassigned'})`
+                      : 'No (Day Scholar)'}
                   </span>
                 </p>
                 <p>
@@ -890,27 +903,63 @@ export const StudentsPage: React.FC = () => {
           </div>
 
           {/* Hostel Residency Check */}
-          <div className="p-3.5 bg-orange-50/50 rounded-xl border border-orange-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="isHostelResident"
-                checked={form.isHostelResident}
-                onChange={(e) => setForm({ ...form, isHostelResident: e.target.checked })}
-                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
-              />
-              <label htmlFor="isHostelResident" className="text-xs font-bold text-slate-800 cursor-pointer">
-                Hostel Boarder Resident (Enables Weekly 7×3 Meal Matrix)
-              </label>
+          <div className="p-3.5 bg-orange-50/50 rounded-xl border border-orange-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="isHostelResident"
+                  checked={form.isHostelResident}
+                  onChange={(e) => setForm({ ...form, isHostelResident: e.target.checked })}
+                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                />
+                <label htmlFor="isHostelResident" className="text-xs font-bold text-slate-800 cursor-pointer">
+                  Hostel Boarder Resident (Enables Weekly 7×3 Meal Matrix)
+                </label>
+              </div>
+              {form.isHostelResident && (
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  Resident Active
+                </span>
+              )}
             </div>
+
             {form.isHostelResident && (
-              <input
-                type="text"
-                placeholder="Room / Wing (e.g. Block B-12)"
-                value={form.hostelRoomNumber}
-                onChange={(e) => setForm({ ...form, hostelRoomNumber: e.target.value })}
-                className="w-48 px-2.5 py-1 text-xs bg-white border border-slate-200 rounded-xl"
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-orange-200/60">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Hostel / Building
+                  </label>
+                  <input
+                    type="text"
+                    list="hostel-names-list"
+                    placeholder="e.g. Boys' Hostel / Girls' Hostel"
+                    value={form.hostelName}
+                    onChange={(e) => setForm({ ...form, hostelName: e.target.value })}
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500"
+                  />
+                  <datalist id="hostel-names-list">
+                    <option value="Boys' Hostel" />
+                    <option value="Girls' Hostel" />
+                    <option value="Hostel Block A" />
+                    <option value="Hostel Block B" />
+                    <option value="Hostel Block C" />
+                  </datalist>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Room No
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Room 12 / Room B-04"
+                    value={form.hostelRoomNumber}
+                    onChange={(e) => setForm({ ...form, hostelRoomNumber: e.target.value })}
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
             )}
           </div>
 

@@ -410,7 +410,9 @@ export const HostelMealsPage: React.FC = () => {
                 Weekly Meal Selection: {activeStudent?.fullName}
               </h3>
               <p className="text-xs text-slate-500">
-                Index: <span className="font-mono font-bold text-slate-700">{activeStudent?.indexNumber}</span> • Room: {activeStudent?.hostelRoomNumber || 'N/A'}
+                Index: <span className="font-mono font-bold text-slate-700">{activeStudent?.indexNumber}</span>
+                {activeStudent?.hostelName && ` • ${activeStudent.hostelName}`}
+                {activeStudent?.hostelRoomNumber ? ` (Room ${activeStudent.hostelRoomNumber})` : ''}
               </p>
             </div>
 
