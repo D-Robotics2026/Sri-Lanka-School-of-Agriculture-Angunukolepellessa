@@ -24,7 +24,6 @@ export const LecturersPage: React.FC = () => {
   const { lecturers, addLecturer, updateLecturer, deleteLecturer, modules } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('all');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,8 +42,6 @@ export const LecturersPage: React.FC = () => {
     photoUrl: '',
     assignedModuleIds: [] as string[]
   });
-
-  const departments = Array.from(new Set(lecturers.map((l) => l.department)));
 
   const handleOpenAdd = () => {
     setEditingLecturer(null);
@@ -96,14 +93,14 @@ export const LecturersPage: React.FC = () => {
   };
 
   const filteredLecturers = lecturers.filter((l) => {
-    const matchesSearch =
-      l.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.lecturerId.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDept = departmentFilter === 'all' || l.department === departmentFilter;
-    return matchesSearch && matchesDept;
+    const q = searchQuery.toLowerCase();
+    return (
+      l.fullName.toLowerCase().includes(q) ||
+      l.lecturerId.toLowerCase().includes(q) ||
+      (l.designation && l.designation.toLowerCase().includes(q)) ||
+      (l.department && l.department.toLowerCase().includes(q))
+    );
   });
-
 
   const handleBulkDeleteLecturers = () => {
     if (selectedLecturerIds.length === 0) return;
@@ -120,9 +117,9 @@ export const LecturersPage: React.FC = () => {
   };
 
   const lecturerImportColumns = [
+    { key: 'lecturerId', label: 'Staff ID' },
     { key: 'fullName', label: 'Full Name', required: true },
     { key: 'designation', label: 'Designation', required: true },
-    { key: 'department', label: 'Department', required: true },
     { key: 'email', label: 'Email Address' },
     { key: 'phone', label: 'Phone Number' },
     { key: 'qualifications', label: 'Academic Qualifications' }
@@ -130,17 +127,17 @@ export const LecturersPage: React.FC = () => {
 
   const lecturerSampleData = [
     {
+      lecturerId: 'LEC-AG-001',
       fullName: 'Dr. W. M. Bandara',
-      designation: 'Senior Agricultural Research Lecturer',
-      department: 'Crop Science & Agronomy',
+      designation: 'Senior Agricultural Lecturer',
       email: 'w.bandara@soa.doa.gov.lk',
       phone: '+94 77 234 5678',
       qualifications: 'Ph.D. (Agronomy) Peradeniya, B.Sc. (Agric)'
     },
     {
+      lecturerId: 'LEC-AG-002',
       fullName: 'Eng. K. R. Jayawardena',
       designation: 'Agricultural Engineering Lecturer',
-      department: 'Farm Machinery & Post-Harvest Technology',
       email: 'k.jayawardena@soa.doa.gov.lk',
       phone: '+94 71 345 6789',
       qualifications: 'M.Sc. (Farm Power & Machinery), B.Sc. Eng'
@@ -150,10 +147,10 @@ export const LecturersPage: React.FC = () => {
   const handleBulkImportLecturers = async (rows: any[]) => {
     for (const r of rows) {
       addLecturer({
-        lecturerId: `LEC-AG-00${Math.floor(10 + Math.random() * 90)}`,
-        fullName: r.fullName || 'Faculty Member',
+        lecturerId: r.lecturerId || `LEC-AG-00${Math.floor(10 + Math.random() * 90)}`,
+        fullName: r.fullName || 'Academic Staff Member',
         designation: r.designation || 'Agricultural Instructor',
-        department: r.department || 'Crop Science & Agronomy',
+        department: r.department || 'Academic Staff',
         email: r.email || `${(r.fullName || 'staff').toLowerCase().replace(/[^a-z0-9]/g, '')}@soa.doa.gov.lk`,
         phone: r.phone || '+94 77 000 0000',
         qualifications: r.qualifications || 'B.Sc. (Agric) Sri Lanka',
@@ -173,41 +170,40 @@ export const LecturersPage: React.FC = () => {
           </h1>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 self-start sm:self-auto"
-        >
-          <Plus size={16} />
-          <span>Add Lecturer / Instructor</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+            title="Bulk import academic staff records from CSV / Excel"
+          >
+            <Upload size={15} />
+            <span>Bulk Import</span>
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+          >
+            <Plus size={16} />
+            <span>Add Lecturer / Instructor</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div className="relative w-full sm:w-80">
+      {/* Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="relative w-full sm:w-96">
           <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by lecturer name, ID, or department..."
+            placeholder="Search by staff name, ID, or designation..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
         </div>
 
-        <div className="w-full sm:w-auto">
-          <select
-            value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="w-full sm:w-64 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          >
-            <option value="all">All Academic Departments</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
+        <div className="text-xs text-slate-500 font-medium px-1">
+          Total Academic Staff: <strong className="text-slate-800 font-bold">{filteredLecturers.length}</strong>
         </div>
       </div>
 
