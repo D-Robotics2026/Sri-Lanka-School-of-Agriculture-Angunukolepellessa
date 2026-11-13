@@ -79,31 +79,30 @@ export const StudentsPage: React.FC = () => {
 
   const handleOpenAdd = () => {
     setEditingStudent(null);
-    const randomBarcode = '884012024' + Math.floor(100 + Math.random() * 900);
     setForm({
-      indexNumber: 'AG/2024/L5/' + Math.floor(100 + Math.random() * 900),
-      barcode: randomBarcode,
-      nic: '2003' + Math.floor(10000000 + Math.random() * 90000000),
+      indexNumber: '',
+      barcode: '',
+      nic: '',
       fullName: '',
       callingName: '',
       gender: 'male',
-      dob: '2003-05-15',
-      address: 'Angunakolapelessa, Southern Province',
-      phone: '+94 77 ' + Math.floor(1000000 + Math.random() * 9000000),
+      dob: '',
+      address: '',
+      phone: '',
       email: '',
       parentName: '',
       parentRelationship: 'Father',
-      parentPhone: '+94 71 ' + Math.floor(1000000 + Math.random() * 9000000),
+      parentPhone: '',
       parentAddress: '',
-      parentOccupation: 'Farmer',
+      parentOccupation: '',
       nvqLevel: 'Level 5',
       semester: 1,
       groupId: groups[0]?.id || '',
       academicYearId: academicYears[0]?.id || '',
-      photoUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=250&q=80',
+      photoUrl: '',
       enrollmentStatus: 'active',
-      isHostelResident: true,
-      hostelRoomNumber: 'Block A, Room 10',
+      isHostelResident: false,
+      hostelRoomNumber: '',
       enrollmentDate: new Date().toISOString().split('T')[0]
     });
     setIsFormModalOpen(true);
@@ -446,11 +445,17 @@ export const StudentsPage: React.FC = () => {
                     <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={s.photoUrl}
-                            alt={s.fullName}
-                            className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                          />
+                          {s.photoUrl ? (
+                            <img
+                              src={s.photoUrl}
+                              alt={s.fullName}
+                              className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center border border-emerald-200 uppercase shrink-0">
+                              {s.callingName ? s.callingName.substring(0, 2) : s.fullName ? s.fullName.substring(0, 2) : 'ST'}
+                            </div>
+                          )}
                           <div>
                             <div className="font-bold text-slate-900">{s.fullName}</div>
                             <div className="text-[11px] text-slate-400">
@@ -568,11 +573,17 @@ export const StudentsPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-5">
-                <img
-                  src={selectedStudent.photoUrl}
-                  alt={selectedStudent.fullName}
-                  className="w-24 h-28 rounded-xl object-cover border-2 border-white/40 shadow-md shrink-0"
-                />
+                {selectedStudent.photoUrl ? (
+                  <img
+                    src={selectedStudent.photoUrl}
+                    alt={selectedStudent.fullName}
+                    className="w-24 h-28 rounded-xl object-cover border-2 border-white/40 shadow-md shrink-0"
+                  />
+                ) : (
+                  <div className="w-24 h-28 rounded-xl bg-white/20 text-white font-extrabold text-2xl flex items-center justify-center border-2 border-white/40 shadow-md shrink-0 uppercase">
+                    {selectedStudent.callingName ? selectedStudent.callingName.substring(0, 2) : selectedStudent.fullName.substring(0, 2)}
+                  </div>
+                )}
 
                 <div className="flex-1 text-center sm:text-left">
                   <h3 className="text-base font-extrabold text-white">{selectedStudent.fullName}</h3>
