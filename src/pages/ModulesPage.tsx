@@ -17,17 +17,15 @@ import {
   Trash2,
   UserCheck,
   ClipboardList,
-  Upload,
-  RotateCcw
+  Upload
 } from 'lucide-react';
 
 export const ModulesPage: React.FC = () => {
-  const { modules, addModule, updateModule, deleteModule, lecturers, resetModulesToSOACurriculum } = useData();
+  const { modules, addModule, updateModule, deleteModule, lecturers } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState<'all' | NVQLevel>('all');
   const [semesterFilter, setSemesterFilter] = useState<'all' | number>('all');
-  const [resetting, setResetting] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,25 +110,6 @@ export const ModulesPage: React.FC = () => {
       addModule(payload);
     }
     setIsModalOpen(false);
-  };
-
-  const handleResetToSOACurriculum = async () => {
-    if (
-      confirm(
-        'Load the official Department of Agriculture SOA Angunakolapelessa standard curriculum?\n\n' +
-        '• Year 1 (Shared NVQ 5 & NVQ 6): EAT/DAT 501 - 506 (Semesters 1 & 2)\n' +
-        '• Year 2 (NVQ 6 Advanced): DAT 601 - 606 (Semesters 3 & 4)'
-      )
-    ) {
-      setResetting(true);
-      try {
-        await resetModulesToSOACurriculum();
-      } catch (err) {
-        console.error('Failed to reset curriculum:', err);
-      } finally {
-        setResetting(false);
-      }
-    }
   };
 
   const filteredModules = modules.filter((m) => {
@@ -229,16 +208,7 @@ export const ModulesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
-          <button
-            onClick={handleResetToSOACurriculum}
-            disabled={resetting}
-            className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
-            title="Load Department of Agriculture official curriculum for NVQ 5 & NVQ 6"
-          >
-            <RotateCcw size={15} className={resetting ? 'animate-spin' : ''} />
-            <span>Reset to SOA Curriculum</span>
-          </button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           <button
             onClick={() => setIsImportModalOpen(true)}
             className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
