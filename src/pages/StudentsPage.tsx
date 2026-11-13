@@ -21,7 +21,8 @@ import {
   Home,
   UserCheck,
   IdCard,
-  Printer
+  Printer,
+  Upload
 } from 'lucide-react';
 
 export const StudentsPage: React.FC = () => {
@@ -213,6 +214,107 @@ export const StudentsPage: React.FC = () => {
     }
   };
 
+  const studentImportColumns = [
+    { key: 'indexNumber', label: 'Index Number', required: true },
+    { key: 'fullName', label: 'Full Name', required: true },
+    { key: 'nic', label: 'NIC / Passport', required: true },
+    { key: 'nvqLevel', label: 'NVQ Level (Level 5 / Level 6)', required: true },
+    { key: 'semester', label: 'Semester (1, 2, 3, 4, or OJT)' },
+    { key: 'gender', label: 'Gender (male / female)' },
+    { key: 'callingName', label: 'Calling / Nick Name' },
+    { key: 'phone', label: 'Contact Phone' },
+    { key: 'email', label: 'Email Address' },
+    { key: 'address', label: 'Residential Address' },
+    { key: 'parentName', label: 'Guardian Name' },
+    { key: 'parentPhone', label: 'Guardian Phone' },
+    { key: 'barcode', label: 'Barcode Number' },
+    { key: 'hostelRoomNumber', label: 'Hostel Room Number' }
+  ];
+
+  const studentSampleData = [
+    {
+      indexNumber: 'AG/2024/L5/001',
+      fullName: 'Kavindu Chamod Senanayake',
+      nic: '200318900456',
+      nvqLevel: 'Level 5',
+      semester: '1',
+      gender: 'male',
+      callingName: 'Kavindu',
+      phone: '+94 77 123 4567',
+      email: 'kavindu@student.soa.doa.gov.lk',
+      address: 'Main St, Angunakolapelessa',
+      parentName: 'S. Senanayake',
+      parentPhone: '+94 71 987 6543',
+      barcode: '884012024001',
+      hostelRoomNumber: 'A-12'
+    },
+    {
+      indexNumber: 'AG/2024/L6/002',
+      fullName: 'Nethmi Dilhara Wickramasinghe',
+      nic: '200276500123',
+      nvqLevel: 'Level 6',
+      semester: '1',
+      gender: 'female',
+      callingName: 'Nethmi',
+      phone: '+94 76 234 5678',
+      email: 'nethmi@student.soa.doa.gov.lk',
+      address: 'Tangalle Road, Beliatta',
+      parentName: 'W. Wickramasinghe',
+      parentPhone: '+94 70 876 5432',
+      barcode: '884012024002',
+      hostelRoomNumber: 'G-05'
+    }
+  ];
+
+  const handleBulkImportStudents = async (rows: any[]) => {
+    for (const r of rows) {
+      const nvq: NVQLevel =
+        r.nvqLevel && r.nvqLevel.toString().includes('6') ? 'Level 6' : 'Level 5';
+      const sem =
+        r.semester === 'OJT' || r.semester === 'ojt'
+          ? 'OJT'
+          : parseInt(r.semester, 10) || 1;
+      const gender =
+        (r.gender || '').toLowerCase().startsWith('f') ? 'female' : 'male';
+      const barcode =
+        r.barcode || '884012024' + Math.floor(1000 + Math.random() * 9000);
+      const indexNum =
+        r.indexNumber || `AG/2024/${nvq === 'Level 6' ? 'L6' : 'L5'}/${Math.floor(100 + Math.random() * 900)}`;
+
+      addStudent({
+        indexNumber: indexNum,
+        barcode: barcode,
+        nic: r.nic || `2003${Math.floor(10000000 + Math.random() * 90000000)}`,
+        fullName: r.fullName || 'Student Name',
+        callingName: r.callingName || (r.fullName ? r.fullName.split(' ')[0] : 'Student'),
+        gender: gender,
+        dob: r.dob || '2003-01-01',
+        address: r.address || 'Angunakolapelessa, Southern Province',
+        phone: r.phone || '+94 77 000 0000',
+        email: r.email || `${indexNum.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}@student.soa.ac.lk`,
+        parent: {
+          name: r.parentName || 'Guardian',
+          relationship: r.parentRelationship || 'Father',
+          phone: r.parentPhone || '+94 71 000 0000',
+          address: r.parentAddress || r.address || 'Angunakolapelessa',
+          occupation: r.parentOccupation || 'Agriculture'
+        },
+        nvqLevel: nvq,
+        semester: sem,
+        groupId: groups[0]?.id || '',
+        academicYearId: academicYears[0]?.id || '',
+        photoUrl:
+          gender === 'female'
+            ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=250&q=80'
+            : 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=250&q=80',
+        enrollmentStatus: 'active',
+        isHostelResident: Boolean(r.hostelRoomNumber),
+        hostelRoomNumber: r.hostelRoomNumber || '',
+        enrollmentDate: new Date().toISOString().split('T')[0]
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -221,18 +323,25 @@ export const StudentsPage: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
             Student Management & Profiles
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Official student registry for School of Agriculture Angunakolapelessa
-          </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 self-start sm:self-auto"
-        >
-          <Plus size={16} />
-          <span>Enroll New Student</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+            title="Bulk import students from CSV or Excel"
+          >
+            <Upload size={15} />
+            <span>Bulk Import</span>
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+          >
+            <Plus size={16} />
+            <span>Enroll New Student</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -852,6 +961,18 @@ export const StudentsPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Students"
+        subtitle="Import multiple student profiles with NIC, barcodes, and NVQ levels from CSV / Excel"
+        columns={studentImportColumns}
+        sampleData={studentSampleData}
+        onImport={handleBulkImportStudents}
+        entityName="Students"
+      />
     </div>
   );
 };
